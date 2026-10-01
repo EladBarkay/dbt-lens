@@ -9,7 +9,7 @@ plugins {
 }
 
 group = "dev.dbt.intellij"
-version = "0.1.4-dev"
+version = "0.1.4"
 
 repositories {
     mavenCentral()
@@ -50,7 +50,7 @@ tasks.withType<KotlinCompile>().configureEach {
 
 intellijPlatform {
     pluginConfiguration {
-        name = "dbt Jinja"
+        name = "dbt Lens"
         ideaVersion { sinceBuild = "253"; untilBuild = "262.*" }
     }
     pluginVerification {

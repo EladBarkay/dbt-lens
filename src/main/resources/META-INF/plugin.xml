@@ -1,9 +1,9 @@
 <idea-plugin>
     <id>dev.dbt.jinja</id>
-    <name>dbt Jinja</name>
-    <vendor>dbt Jinja contributors</vendor>
+    <name>dbt Lens</name>
+    <vendor>dbt Lens contributors</vendor>
     <description><![CDATA[
-        Early development build: Jinja parsing, highlighting, completion, and project macro navigation
+        Jinja parsing, highlighting, folding, completion, and project macro navigation
         in SQL templates. Native SQL integration is an experimental feasibility prototype.
     ]]></description>
     <depends>com.intellij.modules.platform</depends>

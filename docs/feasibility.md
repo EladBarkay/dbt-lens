@@ -139,6 +139,13 @@ forbidden API use. Its merged-module and optional-dependency limitations remain 
 Git now tracks the source, tests and documentation; the working 0.1.3 baseline was committed before
 these changes. Generated caches and build outputs are ignored.
 
+Release candidate **dbt Lens 0.1.4** renames the plugin and build artifact while retaining the original
+`dev.dbt.jinja` plugin ID and internal language/file-type IDs for installation compatibility. The release
+ZIP is `build/distributions/dbt-lens-0.1.4.zip`. All **31 SQL-enabled tests**, plugin structure checks and
+packaging pass again after the rename. Offline binary verification reports **Compatible** against
+**IU-253.31033.145** and **PY-262.10968.92**, with the same qualification limits described above.
+The `release/0.1.4` pull request targets `main`; merging and Marketplace publication are separate steps.
+
 No interactive user-IDE UI qualification, PostgreSQL/Snowflake assistance qualification,
 IntelliJ 2026.1 compatibility run or performance benchmark has been performed. Parser fixtures are
 editing correctness checks, not runtime/dbt equivalence tests. The project-configuration checker

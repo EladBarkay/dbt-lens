@@ -1,4 +1,6 @@
-# dbt Jinja for JetBrains
+# dbt Lens
+
+SQL and Jinja editing for dbt projects in JetBrains IDEs.
 
 An early, installable editor prototype for the production-plugin design. This repository implements
 the first parsing/editor milestone and the mixed-language feasibility experiment. It is not the full
@@ -42,8 +44,11 @@ roots keep their normal SQL editing behavior. Custom output-directory configurat
 The plugin also associates `*.dbt.sql`, `*.jinja` and `*.j2`. Open
 [examples/local-macros.dbt.sql](examples/local-macros.dbt.sql) to try completion, navigation and usages.
 For a file without a detected dbt root, use **Override File Type** and
-choose **dbt Jinja**. After updating to 0.1.4-dev, restart the IDE and reopen the model to refresh its
+choose **dbt Jinja**. After updating to dbt Lens 0.1.4, restart the IDE and reopen the model to refresh its
 existing language selection.
+
+The plugin keeps its original `dev.dbt.jinja` ID so dbt Lens upgrades existing installations.
+Its internal language and file-type name remains **dbt Jinja**.
 
 ## Build and test
 
@@ -60,11 +65,11 @@ For binary compatibility and API checks against the same SDK, run `./gradlew ver
 Use `-PverifierOffline=true` to restrict the verifier to already downloaded dependencies; the validation
 record describes the limits of the offline result.
 
-The installation ZIP appears in `build/distributions/`. Use **Settings → Plugins → Install Plugin
+The installation ZIP appears at `build/distributions/dbt-lens-0.1.4.zip`. Use **Settings → Plugins → Install Plugin
 from Disk** to install it in a compatible IDE, or `./gradlew runIde` to start a separate development IDE.
 The compatibility range in the descriptor is builds 253–262, including PyCharm 2026.2. Only versions
 actually exercised in [docs/feasibility.md](docs/feasibility.md) are validated; this development build is
-not published.
+not published to the JetBrains Marketplace.
 
 To use an installed SDK and runtime, supply paths explicitly (on macOS, SDK paths end in `Contents`):
 
