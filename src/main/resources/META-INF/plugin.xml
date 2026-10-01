@@ -1,0 +1,26 @@
+<idea-plugin>
+    <id>dev.dbt.jinja</id>
+    <name>dbt Jinja</name>
+    <vendor>dbt Jinja contributors</vendor>
+    <description><![CDATA[
+        Early development build: Jinja parsing, highlighting, completion, and project macro navigation
+        in SQL templates. Native SQL integration is an experimental feasibility prototype.
+    ]]></description>
+    <depends>com.intellij.modules.platform</depends>
+    <depends>com.intellij.modules.lang</depends>
+    <depends optional="true" config-file="dbt-sql.xml">com.intellij.database</depends>
+    <extensions defaultExtensionNs="com.intellij">
+        <fileType name="dbt Jinja" language="dbt Jinja" implementationClass="dev.dbt.intellij.lang.DbtFileType"
+                  fieldName="INSTANCE" extensions="jinja;j2" patterns="*.dbt.sql"/>
+        <lang.parserDefinition language="dbt Jinja" implementationClass="dev.dbt.intellij.lang.DbtParserDefinition"/>
+        <lang.syntaxHighlighterFactory language="dbt Jinja" implementationClass="dev.dbt.intellij.editor.DbtSyntaxHighlighterFactory"/>
+        <lang.braceMatcher language="dbt Jinja" implementationClass="dev.dbt.intellij.editor.DbtBraceMatcher"/>
+        <lang.findUsagesProvider language="dbt Jinja" implementationClass="dev.dbt.intellij.editor.DbtFindUsagesProvider"/>
+        <completion.contributor language="dbt Jinja" implementationClass="dev.dbt.intellij.editor.DbtCompletionContributor"/>
+        <annotator language="dbt Jinja" implementationClass="dev.dbt.intellij.editor.DbtAnnotator"/>
+        <lang.substitutor language="" order="first" implementationClass="dev.dbt.intellij.project.DbtSqlLanguageSubstitutor"/>
+        <fileTypeDetector implementation="dev.dbt.intellij.project.DbtSqlFileTypeDetector" order="first"/>
+        <fileTypeOverrider implementation="dev.dbt.intellij.project.DbtSqlFileTypeOverrider" order="last"/>
+        <fileBasedIndex implementation="dev.dbt.intellij.project.DbtMacroIndex"/>
+    </extensions>
+</idea-plugin>
