@@ -97,6 +97,37 @@ class DbtProjectEditorTest : BasePlatformTestCase() {
         val info = myFixture.doHighlighting()
         assertTrue(info.any { it.forcedTextAttributesKey == DbtAnnotator.CALL && it.startOffset == calls.first().textOffset })
     }
+    fun testMacroNavigationInStatementExpressions() {
+        root()
+        val file = open("warehouse/macros/agate_to_dicts.sql", """
+            {% macro agate_to_dicts(agate_table) %}
+              {% set rows = namespace(data=none) %}
+              {% if elementary.agate_val_serialize(agate_table) %}
+                {% for col_value in elementary.agate_val_serialize(agate_table) %}
+                  {% set serializable_col_value = elementary.agate_val_serialize(col_value) %}
+                  {% do elementary.agate_val_serialize(col_value) %}
+                {% endfor %}
+              {% elif elementary.agate_val_serialize(agate_table) %}select 1{% endif %}
+            {% endmacro %}
+            {% macro agate_val_serialize(val) %}{{ return(val) }}{% endmacro %}
+        """.trimIndent())
+        assertEmpty(PsiTreeUtil.findChildrenOfType(file, com.intellij.psi.PsiErrorElement::class.java))
+        val macro = LocalMacros.declarations(file).single { it.name == "agate_val_serialize" }
+        val calls = PsiTreeUtil.findChildrenOfType(file, DbtVariable::class.java).filter { it.text == macro.name }
+        assertEquals(5, calls.size)
+        calls.forEach { assertEquals(macro, it.reference?.resolve()) }
+        assertEquals(5, ReferencesSearch.search(macro).findAll().size)
+        myFixture.doHighlighting()
+        assertNotNull("SQL file has an icon", file.fileType.icon)
+        assertNotNull("Project-tree file type has an icon", file.virtualFile.fileType.icon)
+        com.intellij.codeInsight.folding.CodeFoldingManager.getInstance(project).updateFoldRegions(myFixture.editor)
+        assertTrue("Automatically activated .sql editor folds nested blocks",
+            myFixture.editor.foldingModel.allFoldRegions.size >= 3)
+        // Explicit local bindings still shadow package names, including in statement calls.
+        val shadowed = open("warehouse/macros/shadowed.sql",
+            "{% macro other(elementary) %}{% do elementary.agate_val_serialize(1) %}{% endmacro %}")
+        assertEmpty(PsiTreeUtil.findChildrenOfType(shadowed, DbtVariable::class.java).mapNotNull { it.reference?.resolve() })
+    }
     fun testProjectCompletionAndNamespaceCompletion() = withSqlType(PlainTextFileType.INSTANCE) {
         root()
         myFixture.addFileToProject("warehouse/macros/types.sql", "{% macro edr_type_timestamp() %}timestamp{% endmacro %}")

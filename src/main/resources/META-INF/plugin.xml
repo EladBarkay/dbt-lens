@@ -15,6 +15,7 @@
         <lang.parserDefinition language="dbt Jinja" implementationClass="dev.dbt.intellij.lang.DbtParserDefinition"/>
         <lang.syntaxHighlighterFactory language="dbt Jinja" implementationClass="dev.dbt.intellij.editor.DbtSyntaxHighlighterFactory"/>
         <lang.braceMatcher language="dbt Jinja" implementationClass="dev.dbt.intellij.editor.DbtBraceMatcher"/>
+        <lang.foldingBuilder language="dbt Jinja" implementationClass="dev.dbt.intellij.editor.DbtFoldingBuilder"/>
         <lang.findUsagesProvider language="dbt Jinja" implementationClass="dev.dbt.intellij.editor.DbtFindUsagesProvider"/>
         <completion.contributor language="dbt Jinja" implementationClass="dev.dbt.intellij.editor.DbtCompletionContributor"/>
         <annotator language="dbt Jinja" implementationClass="dev.dbt.intellij.editor.DbtAnnotator"/>

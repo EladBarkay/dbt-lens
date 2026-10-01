@@ -33,7 +33,8 @@ class DbtSyntaxHighlighter : SyntaxHighlighterBase() {
             T.STRING to key("STRING", Colors.STRING), T.NUMBER to key("NUMBER", Colors.NUMBER),
             T.COMMENT to key("COMMENT", Colors.BLOCK_COMMENT), T.OPERATOR to key("OPERATOR", Colors.OPERATION_SIGN),
             T.SQL_KEYWORD to key("SQL_KEYWORD", Colors.KEYWORD), T.SQL_STRING to key("SQL_STRING", Colors.STRING),
-            T.SQL_COMMENT to key("SQL_COMMENT", Colors.LINE_COMMENT), TokenType.BAD_CHARACTER to HighlighterColors.BAD_CHARACTER
+            T.SQL_COMMENT to key("SQL_COMMENT", Colors.LINE_COMMENT), T.SQL_NUMBER to key("SQL_NUMBER", Colors.NUMBER),
+            TokenType.BAD_CHARACTER to HighlighterColors.BAD_CHARACTER
         )
     }
 }
@@ -76,8 +77,23 @@ class SqlColorLexer : LexerBase() {
                 T.SQL_STRING
             }
             char.isLetter() || char == '_' -> {
-                while (to < limit && (buffer[to].isLetterOrDigit() || buffer[to] == '_')) to++
+                while (to < limit && (buffer[to].isLetterOrDigit() || buffer[to] in "_$")) to++
                 if (buffer.subSequence(from, to).toString().lowercase() in SQL_WORDS) T.SQL_KEYWORD else T.TEXT
+            }
+            char.isDigit() || (char == '.' && from + 1 < limit && buffer[from + 1].isDigit()) -> {
+                while (to < limit && buffer[to].isDigit()) to++
+                if (char != '.' && to < limit && buffer[to] == '.') {
+                    to++
+                    while (to < limit && buffer[to].isDigit()) to++
+                }
+                if (to < limit && buffer[to] in "eE") {
+                    var exponent = to + 1
+                    if (exponent < limit && buffer[exponent] in "+-") exponent++
+                    val digits = exponent
+                    while (exponent < limit && buffer[exponent].isDigit()) exponent++
+                    if (exponent > digits) to = exponent
+                }
+                T.SQL_NUMBER
             }
             else -> T.TEXT
         }

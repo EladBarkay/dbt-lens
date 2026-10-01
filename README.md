@@ -11,17 +11,20 @@ dbt project-intelligence release.
 - Expression PSI for names, strings, numbers, calls, keyword arguments, attributes, indexing,
   collections, arithmetic/comparison operators, filters and tests.
 - Error recovery at subsequent Jinja tags, missing block/delimiter diagnostics and brace matching.
-- Independent Jinja highlighting and basic SQL keyword/string/comment coloring in template text.
+- Independent Jinja highlighting and basic SQL keyword/string/comment/number coloring in template text.
+- Persistent folding for macro/block bodies, elif/else bodies, multiline tags, calls and collections.
+- SQL file icons, with a bundled SQL icon when the host does not supply one.
 - Automatic activation in ordinary `.sql` files inside a dbt project, including TextMate and plain-text
   hosts without Database Tools.
 - Function call/declaration coloring, completion for dbt context names, project macros and parameters.
 - Go to Declaration and Find Usages for static calls to top-level macros in the current dbt project,
   including qualified calls using its literal package name (for example `elementary.edr_type_timestamp()`).
+  Calls in set assignments, if/elif conditions, for iterables/conditions and do statements are included.
   Duplicate declarations return multiple candidates. Filters, parameter-shadowed names and discoverable
   statement bindings are excluded. Other package namespaces and dynamic dispatch are still deferred.
 
-Statements other than macro declarations currently retain a balanced token structure; they do not
-have complete statement-specific grammar or lexical-scope semantics. This is a Jinja editing subset,
+Macro signatures and supported statement operands have expression PSI. Other statement headers retain
+a balanced token structure; full statement grammar and lexical-scope semantics remain incomplete. This is a Jinja editing subset,
 not runtime equivalence. Conditional expressions, call argument unpacking, slice syntax and extension
 semantics still need coverage. SQL coloring is lexical, without dialect-specific assistance; SQL strings
 and comments crossing a Jinja hole are not yet context-aware.
@@ -39,7 +42,7 @@ roots keep their normal SQL editing behavior. Custom output-directory configurat
 The plugin also associates `*.dbt.sql`, `*.jinja` and `*.j2`. Open
 [examples/local-macros.dbt.sql](examples/local-macros.dbt.sql) to try completion, navigation and usages.
 For a file without a detected dbt root, use **Override File Type** and
-choose **dbt Jinja**. After updating to 0.1.3-dev, restart the IDE and reopen the model to refresh its
+choose **dbt Jinja**. After updating to 0.1.4-dev, restart the IDE and reopen the model to refresh its
 existing language selection.
 
 ## Build and test

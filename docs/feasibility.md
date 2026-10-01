@@ -114,6 +114,31 @@ Offline IntelliJ Plugin Verifier **1.410** reports **Compatible** for this final
 merged-module/optional-dependency limitations noted above apply. The verifier uses its dedicated
 `offline` property, avoiding duplicate CLI flags when Gradle also runs with `--offline`.
 
+Version **0.1.4-dev** fixes navigation from set assignments, do statements, if/elif conditions and
+for iterables/conditions. Assignment/loop bindings have separate PSI so a package name appearing on
+the right-hand side no longer falsely shadows its macro references. Real local bindings and macro
+parameters remain conservatively excluded. SQL text numbers (integers, decimals and exponents) now
+have numeric highlighting; SQL identifiers, comments and strings remain separate tokens. The dbt
+file type supplies the registered SQL icon when available, otherwise a bundled SQL icon.
+
+The core registers a public `FoldingBuilderEx` implementing `DumbAware`, following the
+[JetBrains folding builder extension](https://plugins.jetbrains.com/docs/intellij/folding-builder.html).
+It folds complete macro/template bodies, elif/else bodies, multiline tags, calls and collections
+without semantic indexes. Actual editor folding-model tests check macro collapse/expand, exact body
+ranges, persistence across highlighting, caret movement, same-length document edits and reopening.
+An automatically activated `.sql` regression checks nested folds and project-tree icons alongside
+the same-file `elementary.agate_val_serialize` statement call, declaration navigation and Find Usages.
+Prefix edits now cover set, do, for and if/elif/else syntax as well as macro signatures.
+
+The final build passes **25 tests** on the exact **PY-262.10968.92** SDK with commercial/database
+modules disabled, **23 tests** on **IU-253.31033.145** with database tools and TextMate disabled, and
+**31 tests** with both enabled. Reports are saved under `build/reports/tests/014-*`. Plugin structure
+checks and ZIP packaging pass; all packaged classes use Java **21** bytecode (class version **65**).
+Offline Plugin Verifier **1.410** reports **Compatible** against both IDE builds with no reported
+forbidden API use. Its merged-module and optional-dependency limitations remain as described above.
+Git now tracks the source, tests and documentation; the working 0.1.3 baseline was committed before
+these changes. Generated caches and build outputs are ignored.
+
 No interactive user-IDE UI qualification, PostgreSQL/Snowflake assistance qualification,
 IntelliJ 2026.1 compatibility run or performance benchmark has been performed. Parser fixtures are
 editing correctness checks, not runtime/dbt equivalence tests. The project-configuration checker
