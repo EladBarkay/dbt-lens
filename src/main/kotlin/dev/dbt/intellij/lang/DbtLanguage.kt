@@ -58,6 +58,7 @@ object DbtTypes {
     val VALUE = type("VALUE")
     val BINARY = type("BINARY")
     val UNARY = type("UNARY")
+    val CONDITIONAL = type("CONDITIONAL")
     val SQL_KEYWORD = type("SQL_KEYWORD")
     val SQL_STRING = type("SQL_STRING")
     val SQL_COMMENT = type("SQL_COMMENT")

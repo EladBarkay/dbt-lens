@@ -9,7 +9,7 @@ plugins {
 }
 
 group = "dev.dbt.intellij"
-version = "0.1.5"
+version = "0.1.6"
 
 repositories {
     mavenCentral()
@@ -23,6 +23,8 @@ dependencies {
         else intellijIdea("2025.3.3") { useInstaller = false }
         val runtime = providers.gradleProperty("localRuntimePath")
         if (runtime.isPresent) jetbrainsRuntimeLocal(runtime.get())
+        bundledPlugin("com.intellij.modules.json")
+        if (providers.gradleProperty("withYamlTests").orNull != "false") testBundledPlugin("org.jetbrains.plugins.yaml")
         testFramework(TestFrameworkType.Platform)
         if (providers.gradleProperty("withTextmateTests").orNull != "false") testBundledPlugin("org.jetbrains.plugins.textmate")
         if (providers.gradleProperty("withSqlTests").orNull == "true") testBundledPlugin("com.intellij.database")
@@ -70,6 +72,10 @@ tasks.runIde {
 }
 
 tasks.prepareTestSandbox {
+    if (providers.gradleProperty("withYamlTests").orNull == "false") {
+        disabledPlugins.add("org.jetbrains.plugins.yaml")
+        disabledPlugins.add("com.intellij.modules.json")
+    }
     // Omitting a test dependency does not disable plugins bundled in the target IDE.
     if (providers.gradleProperty("withSqlTests").orNull != "true") disabledPlugins.add("com.intellij.database")
     if (providers.gradleProperty("withTextmateTests").orNull == "false") disabledPlugins.add("org.jetbrains.plugins.textmate")
@@ -81,6 +87,7 @@ tasks.test {
     systemProperty("java.awt.headless", "true")
     systemProperty("dbt.jinja.test.sql", providers.gradleProperty("withSqlTests").orNull == "true")
     systemProperty("dbt.jinja.test.textmate", providers.gradleProperty("withTextmateTests").orNull != "false")
+    if (providers.gradleProperty("withYamlTests").orNull == "false") exclude("**/DbtYamlIntegrationTest*")
     if (providers.gradleProperty("withSqlTests").orNull != "true") exclude("**/DbtSqlIntegrationTest*")
     if (providers.gradleProperty("withTextmateTests").orNull == "false") {
         filter {

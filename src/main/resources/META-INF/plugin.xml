@@ -9,6 +9,7 @@
     <depends>com.intellij.modules.platform</depends>
     <depends>com.intellij.modules.lang</depends>
     <depends optional="true" config-file="dbt-sql.xml">com.intellij.database</depends>
+    <depends optional="true" config-file="dbt-json.xml">com.intellij.modules.json</depends>
     <extensions defaultExtensionNs="com.intellij">
         <fileType name="dbt Jinja" language="dbt Jinja" implementationClass="dev.dbt.intellij.lang.DbtFileType"
                   fieldName="INSTANCE" extensions="jinja;j2" patterns="*.dbt.sql"/>
@@ -16,6 +17,10 @@
         <lang.syntaxHighlighterFactory language="dbt Jinja" implementationClass="dev.dbt.intellij.editor.DbtSyntaxHighlighterFactory"/>
         <lang.braceMatcher language="dbt Jinja" implementationClass="dev.dbt.intellij.editor.DbtBraceMatcher"/>
         <lang.foldingBuilder language="dbt Jinja" implementationClass="dev.dbt.intellij.editor.DbtFoldingBuilder"/>
+        <lang.documentationProvider language="dbt Jinja" implementationClass="dev.dbt.intellij.editor.DbtDocumentationProvider"/>
+        <colorSettingsPage implementation="dev.dbt.intellij.editor.DbtColorSettingsPage"/>
+        <projectConfigurable parentId="language" id="dev.dbt.lens.settings" displayName="dbt Lens" instance="dev.dbt.intellij.config.DbtSettingsConfigurable"/>
+        <iconProvider implementation="dev.dbt.intellij.config.DbtYamlIconProvider"/>
         <gotoDeclarationHandler implementation="dev.dbt.intellij.editor.DbtEnclosureNavigationHandler"/>
         <lang.findUsagesProvider language="dbt Jinja" implementationClass="dev.dbt.intellij.editor.DbtFindUsagesProvider"/>
         <completion.contributor language="dbt Jinja" implementationClass="dev.dbt.intellij.editor.DbtCompletionContributor"/>

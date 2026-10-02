@@ -15,17 +15,36 @@ import dev.dbt.intellij.lang.DbtTypes as T
 class DbtFoldingBuilder : FoldingBuilderEx(), DumbAware {
     override fun buildFoldRegions(root: PsiElement, document: Document, quick: Boolean): Array<FoldingDescriptor> {
         val folds = linkedMapOf<TextRange, FoldingDescriptor>()
-        fun add(node: ASTNode, start: Int, end: Int) {
+        fun add(node: ASTNode, start: Int, end: Int, placeholder: String = "…") {
             if (end <= start + 1 || end > document.textLength) return
             if (document.getLineNumber(start) == document.getLineNumber(end - 1)) return
             if (document.charsSequence.subSequence(start, end).isBlank()) return
             val range = TextRange(start, end)
-            folds.putIfAbsent(range, FoldingDescriptor(node, range))
+            folds.putIfAbsent(range, FoldingDescriptor(node, range, null, placeholder))
         }
         fun bodyStart(header: ASTNode): Int {
             val firstLine = document.getLineNumber(header.startOffset)
             return if (document.getLineNumber(header.textRange.endOffset - 1) > firstLine)
                 document.getLineEndOffset(firstLine) else header.textRange.endOffset
+        }
+        fun blockPlaceholder(header: ASTNode): String {
+            val start = bodyStart(header)
+            if (start == header.textRange.endOffset) return "…"
+            val brackets = ArrayDeque<String>()
+            fun tokens(node: ASTNode) {
+                if (node.startOffset >= start) return
+                val children = node.getChildren(null)
+                if (children.isNotEmpty()) { children.forEach(::tokens); return }
+                when (node.elementType) {
+                    T.LPAREN -> brackets.addLast(")")
+                    T.LBRACKET -> brackets.addLast("]")
+                    T.LBRACE -> brackets.addLast("}")
+                    T.RPAREN, T.RBRACKET, T.RBRACE -> if (brackets.lastOrNull() == node.text) brackets.removeLast()
+                }
+            }
+            tokens(header)
+            val close = header.findChildByType(T.STMT_CLOSE)?.text ?: "%}"
+            return "…${brackets.reversed().joinToString("")} $close …"
         }
         fun visit(node: ASTNode) {
             // One control on the opening line folds the entire block. Header-only and argument
@@ -38,11 +57,11 @@ class DbtFoldingBuilder : FoldingBuilderEx(), DumbAware {
                     val opening = headers.firstOrNull()
                     val closing = opening?.let { DbtBlocks.closingFor(it) }
                     if (opening != null && closing != null) {
-                        add(node, bodyStart(opening), closing.startOffset)
+                        add(node, bodyStart(opening), closing.startOffset, blockPlaceholder(opening))
                         // Each elif/else body can also be collapsed independently.
                         val branches = headers.filter { DbtBlocks.keyword(it)?.text in setOf("elif", "else") } + closing
                         for (i in 0 until branches.lastIndex) {
-                            add(branches[i], bodyStart(branches[i]), branches[i + 1].startOffset)
+                            add(branches[i], bodyStart(branches[i]), branches[i + 1].startOffset, blockPlaceholder(branches[i]))
                         }
                     }
                 }
