@@ -46,8 +46,9 @@ record describes the limits of the offline result.
 
 The installation ZIP appears in `build/distributions/`. Use **Settings → Plugins → Install Plugin
 from Disk** to install it in a compatible IDE, or `./gradlew runIde` to start a separate development IDE.
-The proposed compatibility range in the descriptor is builds 253–261. Only versions actually exercised
-in [docs/feasibility.md](docs/feasibility.md) are validated; this development build is not published.
+The compatibility range in the descriptor is builds 253–262, including PyCharm 2026.2. Only versions
+actually exercised in [docs/feasibility.md](docs/feasibility.md) are validated; this development build is
+not published.
 
 To use an installed SDK and runtime, supply paths explicitly (on macOS, SDK paths end in `Contents`):
 
@@ -58,6 +59,16 @@ To use an installed SDK and runtime, supply paths explicitly (on macOS, SDK path
 ```
 
 An SDK outside the proposed range is a development experiment, not a compatibility claim.
+
+To check a locally installed IDE while continuing to compile against the pinned IntelliJ SDK:
+
+```sh
+./gradlew verifyPlugin -PverifierOffline=true \
+  -PverificationIdePath='/Applications/PyCharm.app/Contents'
+```
+
+PyCharm 2026.2 requires Java 25 at runtime. The plugin itself remains compiled for Java 21 so it also
+works with the original IntelliJ 2025.3 baseline.
 
 ## SQL feasibility experiment
 

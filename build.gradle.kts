@@ -7,7 +7,7 @@ plugins {
 }
 
 group = "dev.dbt.intellij"
-version = "0.1.0-dev"
+version = "0.1.1-dev"
 
 repositories {
     mavenCentral()
@@ -34,10 +34,13 @@ java { sourceCompatibility = JavaVersion.VERSION_21; targetCompatibility = JavaV
 intellijPlatform {
     pluginConfiguration {
         name = "dbt Jinja"
-        ideaVersion { sinceBuild = "253"; untilBuild = "261.*" }
+        ideaVersion { sinceBuild = "253"; untilBuild = "262.*" }
     }
     pluginVerification {
-        ides { current() }
+        ides {
+            current()
+            providers.gradleProperty("verificationIdePath").orNull?.let { local(file(it)) }
+        }
         if (providers.gradleProperty("verifierOffline").orNull == "true") freeArgs = listOf("-offline")
     }
 }

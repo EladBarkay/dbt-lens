@@ -58,6 +58,14 @@ plugin passed all 15 tests, including three SQL integration tests.
   and the offline dependency report lists unavailable optional frontend modules; this limits the check
   to the locally available distribution, not a complete remote dependency/edition qualification.
 
+Development version **0.1.1-dev** extends the descriptor ceiling to **262.*** after the original
+**261.*** ceiling prevented installation in the user's PyCharm. IntelliJ Plugin Verifier **1.410**
+reports **Compatible** for the rebuilt ZIP against both **PY-262.10968.92** (installed PyCharm
+**2026.2.3**, bundled JBR **25.0.4+1-b508.27**) and **IU-253.31033.145**. The 15-test suite and plugin
+structure checks also pass for this rebuilt version. These are binary compatibility checks against
+PyCharm; its interactive editor workflows have not yet been qualified. The fixture suite still runs
+against the pinned IntelliJ SDK, and native SQL remains experimental.
+
 No subscribed/free-edition UI qualification, PostgreSQL/Snowflake assistance qualification,
 IntelliJ 2026.1 compatibility run or performance benchmark has been performed. Parser fixtures are
 editing correctness checks, not runtime/dbt equivalence tests. The project-configuration checker
