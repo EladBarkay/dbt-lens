@@ -15,6 +15,10 @@ dbt project-intelligence release.
 - Error recovery at subsequent Jinja tags, missing block/delimiter diagnostics and brace matching.
 - Independent Jinja highlighting and basic SQL keyword/string/comment/number coloring in template text.
 - Persistent folding for macro/block bodies, elif/else bodies, multiline tags, calls and collections.
+  Blocks with multiline headers collapse from their first line, including the body.
+- Folding for multiline Jinja comments and SQL block comments.
+- Go to Declaration on closing tags (such as `endmacro`, `endif`, `endfor` and `endset`) navigates to
+  the matching opener, including nested blocks. On macOS, use ⌘B or ⌘-click on the closing keyword.
 - SQL file icons, with a bundled SQL icon when the host does not supply one.
 - Automatic activation in ordinary `.sql` files inside a dbt project, including TextMate and plain-text
   hosts without Database Tools.
@@ -44,7 +48,7 @@ roots keep their normal SQL editing behavior. Custom output-directory configurat
 The plugin also associates `*.dbt.sql`, `*.jinja` and `*.j2`. Open
 [examples/local-macros.dbt.sql](examples/local-macros.dbt.sql) to try completion, navigation and usages.
 For a file without a detected dbt root, use **Override File Type** and
-choose **dbt Jinja**. After updating to dbt Lens 0.1.4, restart the IDE and reopen the model to refresh its
+choose **dbt Jinja**. After updating to dbt Lens 0.1.5, restart the IDE and reopen the model to refresh its
 existing language selection.
 
 The plugin keeps its original `dev.dbt.jinja` ID so dbt Lens upgrades existing installations.
@@ -65,7 +69,7 @@ For binary compatibility and API checks against the same SDK, run `./gradlew ver
 Use `-PverifierOffline=true` to restrict the verifier to already downloaded dependencies; the validation
 record describes the limits of the offline result.
 
-The installation ZIP appears at `build/distributions/dbt-lens-0.1.4.zip`. Use **Settings → Plugins → Install Plugin
+The installation ZIP appears at `build/distributions/dbt-lens-0.1.5.zip`. Use **Settings → Plugins → Install Plugin
 from Disk** to install it in a compatible IDE, or `./gradlew runIde` to start a separate development IDE.
 The compatibility range in the descriptor is builds 253–262, including PyCharm 2026.2. Only versions
 actually exercised in [docs/feasibility.md](docs/feasibility.md) are validated; this development build is
@@ -125,7 +129,8 @@ See [docs/feasibility.md](docs/feasibility.md) for the integration gate and the 
 ## Version review workflow
 
 `main` initially contains repository basics. The implementation is reviewed as stacked PRs:
-`0.1.0` → `main`, `0.1.1` → `0.1.0`, `0.1.2` → `0.1.1`, `0.1.3` → `0.1.2`, and `0.1.4` → `0.1.3`.
+`0.1.0` → `main`, `0.1.1` → `0.1.0`, `0.1.2` → `0.1.1`, `0.1.3` → `0.1.2`, `0.1.4` → `0.1.3`,
+and `0.1.5` → `0.1.4`.
 Review each PR against its immediate predecessor. Earlier development versions retain their original
 names and compatibility ranges; dbt Lens branding is introduced in 0.1.4.
 
