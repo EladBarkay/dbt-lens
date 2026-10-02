@@ -12,11 +12,13 @@ dbt project-intelligence release.
   collections, arithmetic/comparison operators, filters and tests.
 - Error recovery at subsequent Jinja tags, missing block/delimiter diagnostics and brace matching.
 - Independent Jinja highlighting and basic SQL keyword/string/comment coloring in template text.
-- Automatic activation in ordinary `.sql` files inside a dbt project when SQL tooling is available.
-- Completion for dbt context names, file-local macros and the enclosing macro's parameters.
-- Go to Declaration and Find Usages for statically identified unqualified calls to top-level macros
-  in the same file. Duplicate declarations return multiple candidates. Qualified names, filters,
-  parameter-shadowed names and discoverable statement bindings are excluded from this resolver.
+- Automatic activation in ordinary `.sql` files inside a dbt project, including TextMate and plain-text
+  hosts without Database Tools.
+- Function call/declaration coloring, completion for dbt context names, project macros and parameters.
+- Go to Declaration and Find Usages for static calls to top-level macros in the current dbt project,
+  including qualified calls using its literal package name (for example `elementary.edr_type_timestamp()`).
+  Duplicate declarations return multiple candidates. Filters, parameter-shadowed names and discoverable
+  statement bindings are excluded. Other package namespaces and dynamic dispatch are still deferred.
 
 Statements other than macro declarations currently retain a balanced token structure; they do not
 have complete statement-specific grammar or lexical-scope semantics. This is a Jinja editing subset,
@@ -26,22 +28,25 @@ and comments crossing a Jinja hole are not yet context-aware.
 
 ## Open a template
 
-With SQL tooling installed (including the tested PyCharm build), the plugin automatically activates
-Jinja editing for `.sql` files underneath `dbt_project.yml` within an IDE project content root. The
-global SQL file association stays intact, so the file can still display **SQL** as its file type.
+The plugin automatically activates Jinja editing for `.sql` files underneath `dbt_project.yml` within
+an IDE project content root. Database Tools are optional. The global file association stays intact,
+so native SQL/TextMate hosts can still display **SQL** or **TextMate** as their file type.
+PyCharm's legacy SQL syntax-table files and otherwise unclaimed SQL files receive a **dbt Jinja**
+file type beneath a dbt marker. This fallback also works when commercial modules are disabled.
 Default generated directories `target`, `logs` and `.git` are excluded. SQL files outside dbt project
 roots keep their normal SQL editing behavior. Custom output-directory configuration is not yet parsed.
 
 The plugin also associates `*.dbt.sql`, `*.jinja` and `*.j2`. Open
 [examples/local-macros.dbt.sql](examples/local-macros.dbt.sql) to try completion, navigation and usages.
-For a file without a detected dbt root, or an IDE without SQL tooling, use **Override File Type** and
-choose **dbt Jinja**. After updating from 0.1.1-dev, restart the IDE and reopen the model to refresh its
+For a file without a detected dbt root, use **Override File Type** and
+choose **dbt Jinja**. After updating to 0.1.3-dev, restart the IDE and reopen the model to refresh its
 existing language selection.
 
 ## Build and test
 
 Requires a **JDK 21** and network access for the first build. The Gradle wrapper is pinned to 9.0.0
-with a distribution checksum; Kotlin is 2.2.21 and the IntelliJ Platform Gradle plugin is 2.19.0.
+with a distribution checksum; the Kotlin compiler is 2.3.21 (language/API level 2.2, Java 21 output)
+and the IntelliJ Platform Gradle plugin is 2.19.0.
 The default SDK is IntelliJ IDEA 2025.3.3. No Python interpreter or dbt installation is needed.
 
 ```sh
@@ -77,6 +82,12 @@ To check a locally installed IDE while continuing to compile against the pinned 
 
 PyCharm 2026.2 requires Java 25 at runtime. The plugin itself remains compiled for Java 21 so it also
 works with the original IntelliJ 2025.3 baseline.
+Building directly against the PyCharm 2026.2 SDK also requires a full JDK 25; its bundled runtime alone
+does not include the compiler. Use `-PwithTextmateTests=false` to exercise plain-text SQL with both
+TextMate and database test dependencies absent. TextMate regression tests run by default.
+The test sandbox explicitly disables Database Tools unless `-PwithSqlTests=true`; omitting its
+dependency alone would still allow the bundled plugin to load. Add `-PfreeEditionTests=true` when
+testing PyCharm to disable commercial modules as well.
 
 ## SQL feasibility experiment
 
@@ -95,7 +106,7 @@ integration is deferred.
 
 ## Deferred work
 
-Configuration-aware resource discovery; project/package symbol indexes; model/source/YAML
+Configuration-aware resource discovery; dependency-package resolution; model/source/YAML
 navigation; manifest ingestion; complete scope-aware resolution; resource completion; documentation and
 parameter information; argument/resource inspections; safe rename; compiled SQL previews and dbt execution.
 Rename is explicitly rejected until the project-wide reference model exists. No project code or dbt command

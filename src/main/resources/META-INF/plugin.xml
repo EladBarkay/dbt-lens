@@ -3,7 +3,7 @@
     <name>dbt Jinja</name>
     <vendor>dbt Jinja contributors</vendor>
     <description><![CDATA[
-        Early development build: Jinja parsing, highlighting, completion, and local macro navigation
+        Early development build: Jinja parsing, highlighting, completion, and project macro navigation
         in SQL templates. Native SQL integration is an experimental feasibility prototype.
     ]]></description>
     <depends>com.intellij.modules.platform</depends>
@@ -17,5 +17,10 @@
         <lang.braceMatcher language="dbt Jinja" implementationClass="dev.dbt.intellij.editor.DbtBraceMatcher"/>
         <lang.findUsagesProvider language="dbt Jinja" implementationClass="dev.dbt.intellij.editor.DbtFindUsagesProvider"/>
         <completion.contributor language="dbt Jinja" implementationClass="dev.dbt.intellij.editor.DbtCompletionContributor"/>
+        <annotator language="dbt Jinja" implementationClass="dev.dbt.intellij.editor.DbtAnnotator"/>
+        <lang.substitutor language="" order="first" implementationClass="dev.dbt.intellij.project.DbtSqlLanguageSubstitutor"/>
+        <fileTypeDetector implementation="dev.dbt.intellij.project.DbtSqlFileTypeDetector" order="first"/>
+        <fileTypeOverrider implementation="dev.dbt.intellij.project.DbtSqlFileTypeOverrider" order="last"/>
+        <fileBasedIndex implementation="dev.dbt.intellij.project.DbtMacroIndex"/>
     </extensions>
 </idea-plugin>

@@ -5,13 +5,22 @@
 The core plugin depends on `com.intellij.modules.platform` and `com.intellij.modules.lang`. The optional
 `com.intellij.database` descriptor installs `com.intellij.lang.fileViewProviderFactory` only when database
 tools are available. The factory uses a normal single-root provider unless the experiment is enabled.
-The same optional descriptor registers `com.intellij.lang.substitutor` for SQL with `order="first"`.
-This is necessary because the database plugin's dialect substitutor otherwise wins before dbt detection.
-The substitutor selects Jinja for SQL files within a project content root beneath `dbt_project.yml`,
+The core descriptor registers `com.intellij.lang.substitutor` with the empty language ID (the platform's
+all-language hook), independent of database tools. This runs before host-specific dialect substitution
+and handles TextMate/plain-text SQL in free editions. The substitutor selects Jinja only for `.sql`
+files within a project content root beneath `dbt_project.yml`,
 excluding default generated directories. A project service caches at most 512 directory decisions and
 invalidates them on VFS structure and project-root changes. It checks VFS metadata without reading
 configuration contents, scanning source files, using semantic indexes or executing project code.
 Custom configured output paths and complete resource classification remain deferred.
+Free PyCharm also registers a legacy SQL syntax table (`AbstractFileType`) without a `Language`;
+substitution cannot run for it. The public `com.intellij.fileTypeOverrider` extension selects the dbt
+file type for this non-language SQL host only under a dbt marker. It leaves language-backed hosts
+to the substitutor and avoids binary hosts. `com.intellij.fileTypeDetector` covers otherwise unclaimed
+text SQL files. These file-type callbacks have no project parameter, so their marker lookup follows
+VFS ancestors and excludes the same generated directories. Native associations outside dbt remain
+untouched. File-type detection caching means marker changes in the unclaimed-file fallback may require
+reopening/re-detecting the file; the existing language-substitution path has structural cache invalidation.
 There are no SQL plugin classes in the core class signatures. YAML is deferred, so no YAML dependency
 is required by this first editor milestone.
 
@@ -83,7 +92,29 @@ The 12-test core suite also passes with the optional database test dependency ab
 passes plugin structure checks, and offline binary verification reports **Compatible** against both
 **PY-262.10968.92** and **IU-253.31033.145**.
 
-No subscribed/free-edition UI qualification, PostgreSQL/Snowflake assistance qualification,
+The 0.1.0–0.1.2 core runs omitted the database *test dependency*, but this did **not** disable the
+database plugin bundled in the IDE. Their passing core fixtures therefore did not qualify the free
+edition. Version 0.1.3 explicitly disables optional plugins in `prepareTestSandbox`, and a regression
+asserts that SQL/TextMate languages are absent when disabled. This corrects the earlier evidence gap.
+
+Version **0.1.3-dev** passes **22 tests** against the exact installed **PY-262.10968.92** SDK using
+its bundled **JBR 25.0.4+1-b508.27**, with both `com.intellij.modules.ultimate` and `com.intellij.database`
+explicitly disabled. This run exercises PyCharm's default legacy SQL syntax-table host without file-type
+overrides, the real TextMate host, actual editor token highlighting, function colors, completion,
+project macro navigation/Find Usages, duplicates, shadowed names, nested projects, unsaved macro/config
+edits and deletion. The baseline **IU-253.31033.145** passes **20 tests** with database tools and TextMate
+both disabled and **28 tests** with both enabled. The legacy/unclaimed fallback is covered alongside
+the original native SQL integration experiment. Saved reports are in `build/reports/tests/013-*`.
+The build compiler is Kotlin **2.3.21**, with language/API level **2.2** and Java **21** bytecode explicitly
+set on compilation tasks. A full Temurin **25.0.4.1+1** JDK drives the PyCharm SDK build; Temurin
+**21.0.12.1+1** drives the baseline. ZIP contents have class-file version **65**. Structure checks and
+development ZIP packaging pass.
+Offline IntelliJ Plugin Verifier **1.410** reports **Compatible** for this final ZIP against both
+**IU-253.31033.145** and **PY-262.10968.92**, with no reported forbidden API use. The same missing
+merged-module/optional-dependency limitations noted above apply. The verifier uses its dedicated
+`offline` property, avoiding duplicate CLI flags when Gradle also runs with `--offline`.
+
+No interactive user-IDE UI qualification, PostgreSQL/Snowflake assistance qualification,
 IntelliJ 2026.1 compatibility run or performance benchmark has been performed. Parser fixtures are
 editing correctness checks, not runtime/dbt equivalence tests. The project-configuration checker
 warns about the deliberately bounded `until-build` range. Earlier runs with an explicitly selected
@@ -103,6 +134,11 @@ remain release-qualification items.
 5. Add schema-validated artifact enrichment, stale-artifact handling and resource inspections; only then
    consider optional execution and compiled previews.
 
-Local navigation currently rescans PSI in the current file and suppresses a name if any supported
-statement header binds it. This intentionally under-resolves scopes that are not yet understood.
-It is unsuitable for large project resolution; project indexes and measured budgets belong to milestone 2.
+Project macro lookup uses a content-dependent `ScalarIndexExtension<String>` over SQL/Jinja template
+tokens. It opens PSI only for files containing the requested macro name, scopes results to the nearest
+dbt root, and excludes nested projects/default generated directories. Same-file unqualified macros take
+precedence. Qualified calls resolve only through the current project's literal identifier `name:` scalar;
+complex YAML expressions and dependency-package namespaces are not evaluated. Resolution suppresses a
+name if any supported statement header binds it, intentionally under-resolving scopes that are not yet
+understood. Index-backed completion and resolution pause during indexing. Performance qualification,
+full lexical scopes, configured macro paths and dependency packages remain future milestones.

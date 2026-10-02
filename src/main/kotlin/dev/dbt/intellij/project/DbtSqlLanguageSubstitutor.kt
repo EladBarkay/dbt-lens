@@ -3,7 +3,6 @@ package dev.dbt.intellij.project
 import com.intellij.lang.Language
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.Service
-import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.ProjectFileIndex
 import com.intellij.openapi.roots.ProjectRootModificationTracker
@@ -19,7 +18,7 @@ import java.util.concurrent.ConcurrentHashMap
 /** Project-scoped language selection. The global SQL file association remains owned by the IDE. */
 class DbtSqlLanguageSubstitutor : LanguageSubstitutor() {
     override fun getLanguage(file: VirtualFile, project: Project): Language? {
-        if (file.isDirectory || !file.extension.equals("sql", ignoreCase = true) || project.isDisposed) return null
+        if (!file.isValid || file.isDirectory || !file.extension.equals("sql", ignoreCase = true) || project.isDisposed) return null
         return if (project.getService(DbtProjectRoots::class.java).rootFor(file) != null) DbtLanguage else null
     }
 }
@@ -44,21 +43,9 @@ class DbtProjectRoots(private val project: Project) : Disposable {
 
     private fun discover(directory: VirtualFile): VirtualFile? {
         val boundary = ProjectFileIndex.getInstance(project).getContentRootForFile(directory) ?: return null
-        var current: VirtualFile? = directory
-        while (current != null) {
-            ProgressManager.checkCanceled()
-            if (current.name in GENERATED_DIRECTORIES) return null
-            val config = current.findChild("dbt_project.yml")
-            if (config != null && !config.isDirectory) return current
-            if (current == boundary) return null
-            current = current.parent
-        }
-        return null
+        return DbtDirectories.root(directory, boundary)
     }
 
     override fun dispose() = directories.clear()
 
-    companion object {
-        private val GENERATED_DIRECTORIES = setOf("target", "logs", ".git")
-    }
 }
