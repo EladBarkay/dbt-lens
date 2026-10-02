@@ -77,10 +77,17 @@ class DbtEditorTest : BasePlatformTestCase() {
     }
 
     fun testPrefixEditsAlwaysRetainText() {
-        val source = "{% macro m(x, y='a') %}{{ m(x, y=y) }}{% endmacro %}"
-        for (length in 0..source.length) {
-            val prefix = source.take(length)
-            assertEquals(prefix, parse(prefix).node.text)
+        val sources = listOf(
+            "{% macro m(x, y='a') %}{{ m(x, y=y) }}{% endmacro %}",
+            "{% set rows.data = pkg.m(x, y={'nested': [1, 2]}) %}",
+            "{% for a, b in pkg.rows() if a %}{% do pkg.m(b) %}{% endfor %}",
+            "{% if pkg.m() %}select 1{% elif other() %}select 2{% else %}select 3{% endif %}"
+        )
+        for (source in sources) {
+            for (length in 0..source.length) {
+                val prefix = source.take(length)
+                assertEquals(prefix, parse(prefix).node.text)
+            }
         }
     }
 
@@ -104,5 +111,86 @@ class DbtEditorTest : BasePlatformTestCase() {
         }
         assertEquals(source, ranges.joinToString("") { source.substring(it.first, it.second) })
         assertTrue(types.containsAll(setOf(T.SQL_KEYWORD, T.EXPR_OPEN, T.IDENTIFIER, T.STRING, T.SQL_COMMENT)))
+    }
+
+    fun testSqlNumbersAroundJinjaHoles() {
+        val source = "(metric > ((1 + {{ threshold }}/100.0) * avg)) and (1 = 1) select .5, 2e-3, col123, '42' -- 99"
+        val highlighter = DbtSyntaxHighlighter()
+        val lexer = highlighter.highlightingLexer
+        lexer.start(source)
+        val numbers = mutableListOf<String>()
+        val pieces = mutableListOf<String>()
+        while (lexer.tokenType != null) {
+            val text = source.substring(lexer.tokenStart, lexer.tokenEnd)
+            pieces += text
+            if (lexer.tokenType == T.SQL_NUMBER) {
+                numbers += text
+                assertNotEmpty(highlighter.getTokenHighlights(T.SQL_NUMBER).toList())
+            }
+            lexer.advance()
+        }
+        assertEquals(listOf("1", "100.0", "1", "1", ".5", "2e-3"), numbers)
+        assertEquals(source, pieces.joinToString(""))
+    }
+
+    fun testStructuralFoldsSurviveHighlightingEditsAndReopening() {
+        val source = """
+            {% macro process(rows) %}
+              {% for row in rows %}
+                {% if row %}
+                  {{ normalize(row) }}
+                {% elif other %}
+                  select 2
+                {% else %}
+                  select 3
+                {% endif %}
+              {% endfor %}
+              {% set query %}
+                select {{ rows }} / 100.0
+              {% endset %}
+              {% set value = config(
+                meta={
+                  'nested': normalize(
+                    rows
+                  )
+                }
+              ) %}
+            {% endmacro %}
+        """.trimIndent()
+        val file = parse(source)
+        val manager = com.intellij.codeInsight.folding.CodeFoldingManager.getInstance(project)
+        fun update(): Set<Pair<Int, Int>> {
+            manager.updateFoldRegions(myFixture.editor)
+            return myFixture.editor.foldingModel.allFoldRegions.map { it.startOffset to it.endOffset }.toSet()
+        }
+        val initial = update()
+        assertTrue("Macro, for, if, branches, capture set, multiline set and nested calls/collections fold: $initial", initial.size >= 10)
+        val macroStart = source.indexOf("%}") + 2
+        val macroEnd = source.lastIndexOf("{% endmacro")
+        assertTrue(initial.contains(macroStart to macroEnd))
+        fun bodyFold(opening: String, closing: String) {
+            val start = source.indexOf("%}", source.indexOf(opening)) + 2
+            assertTrue("Missing body fold for $opening", initial.contains(start to source.indexOf(closing)))
+        }
+        bodyFold("{% for", "{% endfor")
+        bodyFold("{% if", "{% endif")
+        bodyFold("{% elif", "{% else")
+        bodyFold("{% else", "{% endif")
+        bodyFold("{% set query", "{% endset")
+        val macroRegion = myFixture.editor.foldingModel.allFoldRegions.single { it.startOffset == macroStart && it.endOffset == macroEnd }
+        myFixture.editor.foldingModel.runBatchFoldingOperation { macroRegion.isExpanded = false }
+        assertFalse(macroRegion.isExpanded)
+        myFixture.editor.foldingModel.runBatchFoldingOperation { macroRegion.isExpanded = true }
+        myFixture.editor.caretModel.moveToOffset(source.indexOf("select 3"))
+        myFixture.doHighlighting()
+        assertEquals(initial, update())
+        com.intellij.openapi.command.WriteCommandAction.runWriteCommandAction(project) {
+            myFixture.editor.document.replaceString(source.indexOf("100.0"), source.indexOf("100.0") + 5, "200.0")
+        }
+        com.intellij.psi.PsiDocumentManager.getInstance(project).commitAllDocuments()
+        assertEquals(initial, update())
+        com.intellij.openapi.fileEditor.FileDocumentManager.getInstance().saveDocument(myFixture.editor.document)
+        myFixture.configureFromExistingVirtualFile(file.virtualFile)
+        assertEquals(initial, update())
     }
 }

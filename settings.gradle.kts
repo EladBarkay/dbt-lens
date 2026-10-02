@@ -1,4 +1,4 @@
 pluginManagement {
     repositories { gradlePluginPortal(); mavenCentral() }
 }
-rootProject.name = "dbt-jinja"
+rootProject.name = "dbt-lens"
