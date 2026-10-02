@@ -7,7 +7,7 @@ plugins {
 }
 
 group = "dev.dbt.intellij"
-version = "0.1.1-dev"
+version = "0.1.2-dev"
 
 repositories {
     mavenCentral()

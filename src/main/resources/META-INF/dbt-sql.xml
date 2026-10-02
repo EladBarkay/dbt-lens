@@ -1,5 +1,6 @@
 <idea-plugin>
     <extensions defaultExtensionNs="com.intellij">
+        <lang.substitutor language="SQL" order="first" implementationClass="dev.dbt.intellij.project.DbtSqlLanguageSubstitutor"/>
         <lang.fileViewProviderFactory language="dbt Jinja" implementationClass="dev.dbt.intellij.sql.DbtSqlViewProviderFactory"/>
     </extensions>
 </idea-plugin>

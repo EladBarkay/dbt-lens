@@ -12,6 +12,7 @@ dbt project-intelligence release.
   collections, arithmetic/comparison operators, filters and tests.
 - Error recovery at subsequent Jinja tags, missing block/delimiter diagnostics and brace matching.
 - Independent Jinja highlighting and basic SQL keyword/string/comment coloring in template text.
+- Automatic activation in ordinary `.sql` files inside a dbt project when SQL tooling is available.
 - Completion for dbt context names, file-local macros and the enclosing macro's parameters.
 - Go to Declaration and Find Usages for statically identified unqualified calls to top-level macros
   in the same file. Duplicate declarations return multiple candidates. Qualified names, filters,
@@ -25,10 +26,17 @@ and comments crossing a Jinja hole are not yet context-aware.
 
 ## Open a template
 
-The plugin associates `*.dbt.sql`, `*.jinja` and `*.j2`. Open
+With SQL tooling installed (including the tested PyCharm build), the plugin automatically activates
+Jinja editing for `.sql` files underneath `dbt_project.yml` within an IDE project content root. The
+global SQL file association stays intact, so the file can still display **SQL** as its file type.
+Default generated directories `target`, `logs` and `.git` are excluded. SQL files outside dbt project
+roots keep their normal SQL editing behavior. Custom output-directory configuration is not yet parsed.
+
+The plugin also associates `*.dbt.sql`, `*.jinja` and `*.j2`. Open
 [examples/local-macros.dbt.sql](examples/local-macros.dbt.sql) to try completion, navigation and usages.
-Ordinary `*.sql` files are not automatically reassigned. For a model in an existing project, use the
-IDE's **Override File Type** action and choose **dbt Jinja** for that file.
+For a file without a detected dbt root, or an IDE without SQL tooling, use **Override File Type** and
+choose **dbt Jinja**. After updating from 0.1.1-dev, restart the IDE and reopen the model to refresh its
+existing language selection.
 
 ## Build and test
 
@@ -87,7 +95,7 @@ integration is deferred.
 
 ## Deferred work
 
-Project-root discovery and ordinary SQL substitution; project/package symbol indexes; model/source/YAML
+Configuration-aware resource discovery; project/package symbol indexes; model/source/YAML
 navigation; manifest ingestion; complete scope-aware resolution; resource completion; documentation and
 parameter information; argument/resource inspections; safe rename; compiled SQL previews and dbt execution.
 Rename is explicitly rejected until the project-wide reference model exists. No project code or dbt command

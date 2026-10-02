@@ -5,6 +5,13 @@
 The core plugin depends on `com.intellij.modules.platform` and `com.intellij.modules.lang`. The optional
 `com.intellij.database` descriptor installs `com.intellij.lang.fileViewProviderFactory` only when database
 tools are available. The factory uses a normal single-root provider unless the experiment is enabled.
+The same optional descriptor registers `com.intellij.lang.substitutor` for SQL with `order="first"`.
+This is necessary because the database plugin's dialect substitutor otherwise wins before dbt detection.
+The substitutor selects Jinja for SQL files within a project content root beneath `dbt_project.yml`,
+excluding default generated directories. A project service caches at most 512 directory decisions and
+invalidates them on VFS structure and project-root changes. It checks VFS metadata without reading
+configuration contents, scanning source files, using semantic indexes or executing project code.
+Custom configured output paths and complete resource classification remain deferred.
 There are no SQL plugin classes in the core class signatures. YAML is deferred, so no YAML dependency
 is required by this first editor milestone.
 
@@ -66,6 +73,16 @@ structure checks also pass for this rebuilt version. These are binary compatibil
 PyCharm; its interactive editor workflows have not yet been qualified. The fixture suite still runs
 against the pinned IntelliJ SDK, and native SQL remains experimental.
 
+Development version **0.1.2-dev** fixes activation in ordinary `.sql` models. The expanded **18-test**
+suite passes against the pinned IntelliJ SDK with database tools. The new editor integration test opens
+an actual SQL-associated file under `dbt_project.yml`, checks the active Jinja PSI and editor highlighter,
+and invokes completion at a macro call. Additional tests verify native SQL outside dbt/inside `target`
+and cache invalidation when the project marker is created or deleted. This avoids treating a directly
+invoked substitutor or a forcibly assigned test file type as evidence of real editor activation.
+The 12-test core suite also passes with the optional database test dependency absent. The final ZIP
+passes plugin structure checks, and offline binary verification reports **Compatible** against both
+**PY-262.10968.92** and **IU-253.31033.145**.
+
 No subscribed/free-edition UI qualification, PostgreSQL/Snowflake assistance qualification,
 IntelliJ 2026.1 compatibility run or performance benchmark has been performed. Parser fixtures are
 editing correctness checks, not runtime/dbt equivalence tests. The project-configuration checker
@@ -77,7 +94,7 @@ remain release-qualification items.
 
 1. Complete statement and expression grammar, lexical scope and editing recovery corpus. Add YAML value
    injection without changing the host YAML structure. Do not publish runtime-equivalence claims.
-2. Add cancellable project discovery and source indexes. Resolve ordinary/package macros and literal
+2. Extend marker-based discovery with configuration-aware resource classification and source indexes. Resolve ordinary/package macros and literal
    `ref`/`source` through one provenance-aware resolver. Test no-manifest and unsaved-source behavior.
 3. Add completion, documentation, parameter information and Find Usages against that shared resolver.
    Dynamic references remain unknown. Add rename only after collision and ambiguity tests exist.
