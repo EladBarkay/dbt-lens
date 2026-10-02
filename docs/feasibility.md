@@ -256,6 +256,40 @@ Reports are saved under `build/reports/tests/017-*`. Configuration/structure che
 against both **IU-253.31033.145** and **PY-262.10968.92**, with the same documented qualification limits.
 The feature PR targets `0.1.6`.
 
+Version **0.1.8** makes parameter and binding PSI named/searchable and provides local search scopes.
+Find Usages and declaration-based editor highlighting include reads and reassignments in the same scope;
+nested loop/with/call scopes remain separate. Go to Declaration still chooses the latest known write.
+If branches remain transparent but retain multiple possible definitions after branch-dependent assignments.
+References, completion and static inference share the visibility model, including loop filters, with/call/test
+bindings and outer constants. Imports and full runtime scope semantics remain incomplete.
+
+Completion now separates tags, filters, tests, members and expression names. It suggests local definitions,
+project/dependency macros, contextual loop/caller helpers, common string/dictionary/list methods, and dbt
+namespaces such as adapter, builtins, exceptions, modules and api. Static types follow literals, simple aliases,
+default arguments, captures, collection iteration, common filters and documented return values. Receiver
+chains and dictionary fields are supported conservatively; arbitrary macros and unknown receivers remain
+unknown. Signatures and hover use a shared catalog, and known keyword labels exclude existing keyword or
+positional arguments and positional-only parameters. Runtime version-specific typing, rich Agate objects,
+YAML macro argument metadata and imported-symbol inference remain future work. The catalog was checked
+against official Jinja/Python/dbt documentation and the dbt Core 1.10.6 context source. `api.Relation` and
+`api.Column` receive the declaration color; ordinary call/variable colors remain unchanged.
+
+Public typed/Enter handlers pair Jinja delimiters, allow overtyping existing closers and respect bracket-pair
+settings. They avoid strings, raw blocks and other file types; fixtures caught and fixed native brace pairing
+that initially produced an extra `}`. Accepted structural tag completions create native live templates with
+editable header placeholders and a body cursor. Enter after a complete opening tag at EOF inserts a missing
+end tag; set assignments never get endset and existing complete enclosures are not duplicated. The editing
+subset also parses slices, call unpacking, filtered capture sets, with/call/test headers, dbt docs blocks,
+numeric underscores and plus whitespace controls. Loopcontrols tokens are recognized without claiming
+runtime execution/validation. Resource calls with unpacking or overridden builtin macros remain unresolved.
+
+The 0.1.8 matrix passes **70 SQL-enabled tests**, **56 minimal-host tests** with SQL, TextMate, JSON and
+YAML disabled, and **63 tests** on the exact **PY-262.10968.92** SDK with commercial/database modules disabled.
+Reports are saved under `build/reports/tests/018-*`. Configuration and structure checks and packaging pass;
+`dbt-lens-0.1.8.zip` uses Java **21** bytecode (class version **65**). Offline Plugin Verifier **1.410** reports
+**Compatible** against both **IU-253.31033.145** and **PY-262.10968.92**, with the same merged-module and
+optional-dependency qualification limits. The feature PR targets `0.1.7`.
+
 No interactive user-IDE UI qualification, PostgreSQL/Snowflake assistance qualification,
 IntelliJ 2026.1 compatibility run or performance benchmark has been performed. Parser fixtures are
 editing correctness checks, not runtime/dbt equivalence tests. The project-configuration checker

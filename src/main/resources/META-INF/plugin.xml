@@ -31,6 +31,8 @@
         <gotoDeclarationHandler implementation="dev.dbt.intellij.editor.DbtEnclosureNavigationHandler"/>
         <lang.findUsagesProvider language="dbt Jinja" implementationClass="dev.dbt.intellij.editor.DbtFindUsagesProvider"/>
         <completion.contributor language="dbt Jinja" implementationClass="dev.dbt.intellij.editor.DbtCompletionContributor"/>
+        <typedHandler implementation="dev.dbt.intellij.editor.DbtTypedHandler"/>
+        <enterHandlerDelegate implementation="dev.dbt.intellij.editor.DbtEnterHandler"/>
         <annotator language="dbt Jinja" implementationClass="dev.dbt.intellij.editor.DbtAnnotator"/>
         <lang.substitutor language="" order="first" implementationClass="dev.dbt.intellij.project.DbtSqlLanguageSubstitutor"/>
         <fileTypeDetector implementation="dev.dbt.intellij.project.DbtSqlFileTypeDetector" order="first"/>

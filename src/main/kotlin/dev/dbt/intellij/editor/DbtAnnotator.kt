@@ -11,6 +11,7 @@ import dev.dbt.intellij.psi.DbtCallables
 import dev.dbt.intellij.psi.DbtMacro
 import dev.dbt.intellij.psi.DbtVariable
 import dev.dbt.intellij.psi.LocalVariables
+import dev.dbt.intellij.semantic.DbtTypeInference
 
 class DbtAnnotator : Annotator {
     override fun annotate(element: PsiElement, holder: AnnotationHolder) {
@@ -23,12 +24,13 @@ class DbtAnnotator : Annotator {
         } else if (element is DbtVariable) {
             val access = DbtCallables.memberAccess(element)
             val use = DbtCallables.use(element)
-            val binding = access == null && LocalVariables.declaration(element) != null
+            val binding = access == null && LocalVariables.candidates(element).isNotEmpty()
             val key = when {
                 use in setOf(DbtCallables.Use.FILTER, DbtCallables.Use.TEST) -> CALL
                 binding -> VARIABLE
+                DbtTypeInference.symbol(element)?.type?.name in setOf("api.Relation", "api.Column") -> DECLARATION
                 use == DbtCallables.Use.CALL -> CALL
-                access == null && element.text in DbtContext.NAMES -> GLOBAL
+                access == null && (element.text in DbtContext.NAMES || element.text in DbtTypeInference.contextual(element)) -> GLOBAL
                 else -> null // Unbound identifiers/attributes are not automatically variables.
             }
             key?.let { color(element, it, holder) }
