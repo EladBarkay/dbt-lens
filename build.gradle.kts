@@ -9,7 +9,7 @@ plugins {
 }
 
 group = "dev.dbt.intellij"
-version = "0.1.6"
+version = "0.1.7"
 
 repositories {
     mavenCentral()
@@ -24,7 +24,7 @@ dependencies {
         val runtime = providers.gradleProperty("localRuntimePath")
         if (runtime.isPresent) jetbrainsRuntimeLocal(runtime.get())
         bundledPlugin("com.intellij.modules.json")
-        if (providers.gradleProperty("withYamlTests").orNull != "false") testBundledPlugin("org.jetbrains.plugins.yaml")
+        bundledPlugin("org.jetbrains.plugins.yaml")
         testFramework(TestFrameworkType.Platform)
         if (providers.gradleProperty("withTextmateTests").orNull != "false") testBundledPlugin("org.jetbrains.plugins.textmate")
         if (providers.gradleProperty("withSqlTests").orNull == "true") testBundledPlugin("com.intellij.database")

@@ -1,0 +1,8 @@
+<idea-plugin>
+    <extensions defaultExtensionNs="dev.dbt.jinja">
+        <resourceMetadata implementation="dev.dbt.intellij.resources.DbtYamlResourceMetadata"/>
+    </extensions>
+    <extensions defaultExtensionNs="com.intellij">
+        <psi.referenceContributor language="yaml" implementation="dev.dbt.intellij.resources.DbtYamlResourceReferences"/>
+    </extensions>
+</idea-plugin>

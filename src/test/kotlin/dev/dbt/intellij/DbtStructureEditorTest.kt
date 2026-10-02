@@ -99,10 +99,11 @@ class DbtStructureEditorTest : BasePlatformTestCase() {
             val source = "{% $header %}\n  select 123\n{% $closing %}"
             parse(source)
             val regions = folds()
-            val firstLine = regions.filter { myFixture.editor.document.getLineNumber(it.startOffset) == 0 }
+            val expectedStart = if (closing == "endmacro") source.indexOf("%}") + 2 else source.indexOf('\n')
+            val firstLine = regions.filter { it.startOffset == expectedStart }
             assertEquals("One primary block control, no competing signature folds", 1, firstLine.size)
             val block = firstLine.single()
-            assertEquals(source.indexOf('\n'), block.startOffset)
+            assertEquals(expectedStart, block.startOffset)
             assertEquals(source.indexOf("{% $closing"), block.endOffset)
             myFixture.editor.foldingModel.runBatchFoldingOperation { block.isExpanded = false }
             assertTrue("Macro/loop/conditional body is collapsed", myFixture.editor.foldingModel.isOffsetCollapsed(source.indexOf("select 123")))

@@ -20,13 +20,10 @@ object DbtYamlFiles {
         val type = file.nameWithoutExtension
         if (file.parent == root && type in setOf("dbt_project", "profiles", "packages", "dependencies", "selectors")) return type
         // Resource/property YAML belongs only in configured resource folders. Leave unrelated YAML alone.
-        val defaults = mapOf("model-paths" to "models", "seed-paths" to "seeds", "snapshot-paths" to "snapshots",
-            "test-paths" to "tests", "analysis-paths" to "analyses", "macro-paths" to "macros")
-        val config = root.findChild("dbt_project.yml")?.let { com.intellij.psi.PsiManager.getInstance(project).findFile(it)?.text }.orEmpty()
-        val inResourcePath = defaults.any { (key, default) ->
-            val value = Regex("(?m)^${Regex.escape(key)}:[ \\t]*\\[([^\\r\\n]*)]\\s*(?:#.*)?$").find(config)?.groupValues?.get(1)
-            val paths = if (value == null) listOf(default) else value.split(',').map { it.trim().trim('\'', '"') }.filter { it.isNotEmpty() }
-            paths.any { path -> root.findFileByRelativePath(path)?.let { VfsUtilCore.isAncestor(it, file, true) } == true }
+        val inResourcePath = dev.dbt.intellij.project.DbtProjectConfiguration.DEFAULT_PATHS.keys.any { key ->
+            dev.dbt.intellij.project.DbtProjectConfiguration.paths(project, root, key).any { path ->
+                root.findFileByRelativePath(path)?.let { VfsUtilCore.isAncestor(it, file, true) } == true
+            }
         }
         return if (inResourcePath) "dbt_yml_files" else null
     }

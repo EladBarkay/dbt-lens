@@ -57,7 +57,8 @@ class DbtFoldingBuilder : FoldingBuilderEx(), DumbAware {
                     val opening = headers.firstOrNull()
                     val closing = opening?.let { DbtBlocks.closingFor(it) }
                     if (opening != null && closing != null) {
-                        add(node, bodyStart(opening), closing.startOffset, blockPlaceholder(opening))
+                        if (node.elementType == T.MACRO) add(node, opening.textRange.endOffset, closing.startOffset)
+                        else add(node, bodyStart(opening), closing.startOffset, blockPlaceholder(opening))
                         // Each elif/else body can also be collapsed independently.
                         val branches = headers.filter { DbtBlocks.keyword(it)?.text in setOf("elif", "else") } + closing
                         for (i in 0 until branches.lastIndex) {
