@@ -14,6 +14,7 @@ class DbtValue(node: ASTNode) : ASTWrapperPsiElement(node) {
     override fun getReference(): PsiReference? {
         if (node.firstChildNode?.elementType != T.STRING || parent.node.elementType != T.ARGUMENT ||
             ProjectMacros.root(this) == null) return null
+        dev.dbt.intellij.dispatch.DispatchReference.forValue(this)?.let { return it }
         val call = ResourceCall.from(parent.parent) ?: return null
         return DbtResourceReference(this, TextRange(1, textLength - 1), call)
     }

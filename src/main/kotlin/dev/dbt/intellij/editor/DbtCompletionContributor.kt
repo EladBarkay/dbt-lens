@@ -89,7 +89,7 @@ class DbtCompletionContributor : CompletionContributor() {
             .withInsertHandler { context, _ -> insertCall(context, macro.parameters.isNotEmpty()) }) } }
     }
     private fun addKeywordArguments(position: PsiElement, prefixStart: Int, result: CompletionResultSet) {
-        val argument = generateSequence(position) { it.parent }.firstOrNull { it.node.elementType == T.ARGUMENT } ?: return
+        val argument = generateSequence(position) { if (it is com.intellij.psi.PsiFile) null else it.parent }.firstOrNull { it.node?.elementType == T.ARGUMENT } ?: return
         val call = argument.parent.takeIf { it.node.elementType == T.CALL } ?: return
         // Only at the beginning of an argument, never after its '=' or within an expression.
         if (argument.textOffset != prefixStart) return

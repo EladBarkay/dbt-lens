@@ -17,8 +17,9 @@ class DbtEnterHandler : EnterHandlerDelegate {
         if (file.language != DbtLanguage || !CodeInsightSettings.getInstance().AUTOINSERT_PAIR_BRACKET) return EnterHandlerDelegate.Result.Continue
         PsiDocumentManager.getInstance(file.project).commitDocument(editor.document)
         val offset = caretOffset.get()
+        if (offset <= 0 || offset > editor.document.textLength) return EnterHandlerDelegate.Result.Continue
         val leaf = file.findElementAt(offset - 1) ?: return EnterHandlerDelegate.Result.Continue
-        val header = generateSequence(leaf) { it.parent }.firstOrNull { it.node.elementType == T.STATEMENT } ?: return EnterHandlerDelegate.Result.Continue
+        val header = generateSequence(leaf) { if (it is com.intellij.psi.PsiFile) null else it.parent }.firstOrNull { it.node?.elementType == T.STATEMENT } ?: return EnterHandlerDelegate.Result.Continue
         if (header.textRange.endOffset != offset || header.node.findChildByType(T.STMT_CLOSE) == null || !DbtBlocks.isStructuralHeader(header.node)) return EnterHandlerDelegate.Result.Continue
         val close = DbtBlocks.CLOSING[DbtBlocks.keyword(header.node)?.text] ?: return EnterHandlerDelegate.Result.Continue
         if (DbtBlocks.closingFor(header.node) != null) return EnterHandlerDelegate.Result.Continue

@@ -59,7 +59,7 @@ dbt project-intelligence release.
   `dbt_packages` or a literal `packages-install-path`, using each dependency's `dbt_project.yml` name.
   Excluded package folders have a cached token catalog, so ordinary IDE indexing exclusions do not
   prevent navigation. Unqualified calls prefer the current project; conflicting dependency definitions
-  remain ambiguous. Dynamic dispatch and runtime-generated namespaces remain deferred.
+  remain ambiguous. Dispatch with dynamic arguments and runtime-generated namespaces remains deferred.
 
 Macro signatures and supported statement operands have expression PSI. Other statement headers retain
 a balanced token structure; full statement grammar and lexical-scope semantics remain incomplete. This is a Jinja editing subset,
@@ -100,7 +100,7 @@ independently of file type; semantic assistance is scoped to the detected dbt ro
 The plugin also associates `*.dbt.sql`, `*.jinja` and `*.j2`. Open
 [examples/local-macros.dbt.sql](examples/local-macros.dbt.sql) to try completion, navigation and usages.
 For a file without a detected dbt root, use **Override File Type** and
-choose **dbt Jinja**. After updating to dbt Lens 0.1.8, restart the IDE and reopen the model to refresh its
+choose **dbt Jinja**. After updating to dbt Lens 0.1.9, restart the IDE and reopen the model to refresh its
 existing language selection.
 
 The plugin keeps its original `dev.dbt.jinja` ID so dbt Lens upgrades existing installations.
@@ -142,6 +142,31 @@ cancellation checks, and limit YAML/snapshot reads to 2 MB. YAML metadata is opt
 seeds and SQL snapshots resolve without the YAML plugin. No manifest, adapter or dbt execution is needed.
 Resource completion, Find Usages/rename and runtime-generated resource names remain deferred.
 
+## Adapter dispatch navigation
+
+On a literal `adapter.dispatch('format_value', 'utils')` call, use ⌘B/⌘-click on `dispatch` or the
+macro-name string to choose among discovered `default__format_value`, `snowflake__format_value`,
+`postgres__format_value`, and other implementations. A single result navigates directly. Defaults appear
+first within each package; package order follows literal root-project `dispatch.search_order` when
+native YAML is available. Without an override, a named package searches the root project then that
+package. Installed packages' own dispatch configurations are ignored. Unqualified dispatch offers
+implementations from reachable project/dependency namespaces. Dependencies in excluded/custom install
+folders are supported, and committed unsaved source/config edits refresh results.
+
+On an adapter-specific declaration such as `snowflake__format_value`, Go to Declaration opens its
+package's `default__format_value`; if that package has none, it offers visible dependency defaults.
+Find Usages on any implementation includes matching SQL/Jinja dispatch call sites and ordinary direct calls.
+Namespace strings are not counted again as macro usages. Keyword arguments `macro_name=` and
+`macro_namespace=` are also supported. Shadowed adapters, dynamic/unpacked arguments, malformed calls,
+and unrelated dbt projects are excluded.
+
+These are **available implementations and possible call sites**, not a prediction of the implementation
+selected by the current adapter. Adapter profiles/inheritance, runtime registration and built-in dbt
+macros absent from installed source are not inferred. Unsupported dynamic/alias search-order values
+stay unresolved. Without native YAML, named dispatch with a root-level dispatch config stays unresolved.
+See the official [dispatch rules](https://docs.getdbt.com/reference/dbt-jinja-functions/dispatch) and
+[search-order configuration](https://docs.getdbt.com/reference/project-configs/dispatch-config).
+
 ## SQL editing modes
 
 The default Jinja editor uses dialect-independent **lexical SQL coloring**. It does not provide native
@@ -169,7 +194,7 @@ For binary compatibility and API checks against the same SDK, run `./gradlew ver
 Use `-PverifierOffline=true` to restrict the verifier to already downloaded dependencies; the validation
 record describes the limits of the offline result.
 
-The installation ZIP appears at `build/distributions/dbt-lens-0.1.8.zip`. Use **Settings → Plugins → Install Plugin
+The installation ZIP appears at `build/distributions/dbt-lens-0.1.9.zip`. Use **Settings → Plugins → Install Plugin
 from Disk** to install it in a compatible IDE, or `./gradlew runIde` to start a separate development IDE.
 The compatibility range in the descriptor is builds 253–262, including PyCharm 2026.2. Only versions
 actually exercised in [docs/feasibility.md](docs/feasibility.md) are validated; this development build is
@@ -230,7 +255,7 @@ See [docs/feasibility.md](docs/feasibility.md) for the integration gate and the 
 
 `main` initially contains repository basics. The implementation is reviewed as stacked PRs:
 `0.1.0` → `main`, `0.1.1` → `0.1.0`, `0.1.2` → `0.1.1`, `0.1.3` → `0.1.2`, `0.1.4` → `0.1.3`,
-`0.1.5` → `0.1.4`, `0.1.6` → `0.1.5`, `0.1.7` → `0.1.6`, and `0.1.8` → `0.1.7`.
+`0.1.5` → `0.1.4`, `0.1.6` → `0.1.5`, `0.1.7` → `0.1.6`, `0.1.8` → `0.1.7`, and `0.1.9` → `0.1.8`.
 Review each PR against its immediate predecessor. Earlier development versions retain their original
 names and compatibility ranges; dbt Lens branding is introduced in 0.1.4.
 
