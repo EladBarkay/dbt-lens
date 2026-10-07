@@ -1,0 +1,5 @@
+<idea-plugin>
+    <extensions defaultExtensionNs="com.intellij">
+        <lang.fileViewProviderFactory language="dbt Jinja" implementationClass="dev.dbt.intellij.sql.DbtSqlViewProviderFactory"/>
+    </extensions>
+</idea-plugin>
