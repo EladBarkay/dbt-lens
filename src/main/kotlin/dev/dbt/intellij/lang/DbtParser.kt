@@ -264,9 +264,7 @@ class DbtParser : PsiParser {
     }
 
     companion object {
-        private val CLOSING = mapOf("macro" to "endmacro", "if" to "endif", "for" to "endfor", "call" to "endcall",
-            "filter" to "endfilter", "block" to "endblock", "raw" to "endraw", "with" to "endwith",
-            "snapshot" to "endsnapshot", "test" to "endtest", "materialization" to "endmaterialization")
+        private val CLOSING = DbtBlocks.CLOSING.filterKeys { it != "set" }
         private val LITERALS = setOf("true", "false", "none", "True", "False", "None")
         private val PRECEDENCE = mapOf("or" to 10, "and" to 20, "is" to 30, "in" to 30, "not" to 30,
             "==" to 30, "!=" to 30, "<" to 30, ">" to 30, "<=" to 30, ">=" to 30, "~" to 40,

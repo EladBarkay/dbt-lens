@@ -147,6 +147,27 @@ packaging pass again after the rename. Offline binary verification reports **Com
 The `0.1.4` pull request targets `0.1.3`. Earlier version PRs target their immediate predecessor,
 starting with `0.1.0` targeting the bootstrap-only `main`. Merging and Marketplace publication are separate steps.
 
+Version **0.1.5** adds Go to Declaration from every supported closing keyword to its matching opener.
+Nested enclosures are resolved through their parsed block, and malformed/mismatched closers do not
+navigate to unrelated openings. A `DumbAware` `GotoDeclarationHandler` provides structural navigation
+without adding closing tags to semantic macro usages. Tests invoke the IDE's actual declaration action,
+including automatically activated `.sql` files and unchanged macro Find Usages counts.
+
+Multiline Jinja comments (including whitespace control) and complete SQL block comments now fold.
+String contents, single-line comments and incomplete comment blocks do not produce comment folds.
+SQL comment folding shares the lexical fallback's existing limitation around Jinja holes.
+Blocks and elif/else branches with multiline headers have a primary fold starting at the end of
+their first line and extending through the body. Competing header/argument-only folds are suppressed
+inside structural headers; standalone expression/set-call folds remain available. Editor tests check
+that collapsing the first-line region actually hides the macro, loop or conditional body.
+
+The final 0.1.5 source passes **35 SQL-enabled tests**, **27 minimal-host tests**, and **29 tests** on
+the exact **PY-262.10968.92** SDK with commercial/database modules disabled. Reports are saved under
+`build/reports/tests/015-*`. Structure checks and `dbt-lens-0.1.5.zip` packaging pass; packaged classes
+retain Java **21** bytecode. Offline Plugin Verifier **1.410** reports **Compatible** against both
+**IU-253.31033.145** and **PY-262.10968.92**, with the same documented qualification limits.
+The `0.1.5` feature PR targets `0.1.4`.
+
 No interactive user-IDE UI qualification, PostgreSQL/Snowflake assistance qualification,
 IntelliJ 2026.1 compatibility run or performance benchmark has been performed. Parser fixtures are
 editing correctness checks, not runtime/dbt equivalence tests. The project-configuration checker

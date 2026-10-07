@@ -119,6 +119,9 @@ class DbtProjectEditorTest : BasePlatformTestCase() {
         assertEquals(5, ReferencesSearch.search(macro).findAll().size)
         myFixture.doHighlighting()
         assertNotNull("SQL file has an icon", file.fileType.icon)
+        val closing = file.text.lastIndexOf("endmacro") + 2
+        val targets = com.intellij.codeInsight.navigation.actions.GotoDeclarationAction.findAllTargetElements(project, myFixture.editor, closing)
+        assertEquals("Closing-tag navigation works in automatically activated SQL", macro, targets!!.single())
         assertNotNull("Project-tree file type has an icon", file.virtualFile.fileType.icon)
         com.intellij.codeInsight.folding.CodeFoldingManager.getInstance(project).updateFoldRegions(myFixture.editor)
         assertTrue("Automatically activated .sql editor folds nested blocks",
