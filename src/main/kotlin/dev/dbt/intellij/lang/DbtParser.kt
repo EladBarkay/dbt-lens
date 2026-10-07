@@ -122,7 +122,7 @@ class DbtParser : PsiParser {
                 "for" -> {
                     name(DbtTypes.BINDING_NAME)
                     while (eat(DbtTypes.COMMA)) name(DbtTypes.BINDING_NAME)
-                    if (b.tokenText == "in") { b.advanceLexer(); expression(0, 0) }
+                    if (b.tokenText == "in") { b.advanceLexer(); expression(6, 0) }
                     else b.error("Expected 'in'")
                     if (b.tokenText == "if") { b.advanceLexer(); expression(0, 0) }
                 }
@@ -223,7 +223,7 @@ class DbtParser : PsiParser {
                             while (!b.eof() && !boundary() && !isType(DbtTypes.RPAREN)) {
                                 val argument = b.mark(); val offset = b.currentOffset
                                 if (isName() && b.lookAhead(1) == DbtTypes.OPERATOR && tokenAfterIdentifierIsEquals()) {
-                                    b.advanceLexer(); b.advanceLexer()
+                                    name(DbtTypes.ARGUMENT_NAME); b.advanceLexer()
                                 }
                                 expression(0, depth + 1); argument.done(DbtTypes.ARGUMENT)
                                 if (!eat(DbtTypes.COMMA)) break
@@ -243,6 +243,20 @@ class DbtParser : PsiParser {
                         }
                     }
                     left = outer; continue
+                }
+                // Jinja inline conditional: value if condition else alternative. The condition
+                // is an or-expression; the alternative associates to the right. A for-header's
+                // iterable starts above this precedence so its trailing if remains a loop filter.
+                if (b.tokenText == "if" && minimum <= 5) {
+                    val outer = left.precede()
+                    b.advanceLexer()
+                    expression(6, depth + 1)
+                    if (b.tokenText == "else") {
+                        b.advanceLexer()
+                        expression(5, depth + 1)
+                    }
+                    outer.done(DbtTypes.CONDITIONAL); left = outer
+                    continue
                 }
                 val operator = b.tokenText ?: break
                 val precedence = PRECEDENCE[operator] ?: break

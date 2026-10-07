@@ -15,24 +15,42 @@ dbt project-intelligence release.
 - Error recovery at subsequent Jinja tags, missing block/delimiter diagnostics and brace matching.
 - Independent Jinja highlighting and basic SQL keyword/string/comment/number coloring in template text.
 - Persistent folding for macro/block bodies, elif/else bodies, multiline tags, calls and collections.
-  Blocks with multiline headers collapse from their first line, including the body.
+  Macro folding keeps the entire signature visible and collapses only the body. Other structural
+  blocks with multiline headers retain their first-line controls and closing-delimiter placeholders.
 - Folding for multiline Jinja comments and SQL block comments.
 - Go to Declaration on closing tags (such as `endmacro`, `endif`, `endfor` and `endset`) navigates to
   the matching opener, including nested blocks. On macOS, use ⌘B or ⌘-click on the closing keyword.
-- SQL file icons, with a bundled SQL icon when the host does not supply one.
+- The supplied dbt mark for configuration/property YAML and a code-badged variant for SQL in dbt
+  projects. Ordinary SQL outside dbt projects retains its host icon.
 - Automatic activation in ordinary `.sql` files inside a dbt project, including TextMate and plain-text
   hosts without Database Tools.
-- Function call/declaration coloring, completion for dbt context names, project macros and parameters.
-- Go to Declaration and Find Usages for static calls to top-level macros in the current dbt project,
-  including qualified calls using its literal package name (for example `elementary.edr_type_timestamp()`).
+- A restrained palette: white variables and function usages, blue declarations, muted red keyword
+  argument labels, and subdued violet dbt context globals. Categories remain configurable.
+  Change them under **Settings → Editor → Color Scheme → dbt Lens**.
+- Completion for dbt context names, project/dependency macros and parameters.
+- Quick Documentation/hover for macros, using the adjacent Jinja or SQL comment immediately above their
+  declaration. Comment text is escaped and displayed as plain text; Jinja is never executed.
+- Static local-variable navigation for macro parameters, enclosing loop bindings and preceding set bindings.
+- Native YAML completion/validation and dbt icons for project/profile/package/dependency/selector files
+  and resource property YAML. YAML retains its native file type and parser.
+- Go to Declaration and Find Usages for static calls to top-level macros in the current dbt project and installed dependencies,
+  including qualified calls using literal package names (for example `elementary.edr_type_timestamp()`).
   Calls in set assignments, if/elif conditions, for iterables/conditions and do statements are included.
-  Duplicate declarations return multiple candidates. Filters, parameter-shadowed names and discoverable
-  statement bindings are excluded. Other package namespaces and dynamic dispatch are still deferred.
+  Duplicate declarations return multiple candidates. Bare pipeline filters are classified as callable
+  usages. Unknown filters can navigate to a matching macro, but this is a static convenience, not proof
+  of registration in Jinja's separate filter registry. Built-in filters/tests are not misresolved to
+  same-named macros. Parameter/set/loop bindings take precedence for ordinary name references; macro
+  callbacks passed as values also navigate. Installed dependencies are discovered under
+  `dbt_packages` or a literal `packages-install-path`, using each dependency's `dbt_project.yml` name.
+  Excluded package folders have a cached token catalog, so ordinary IDE indexing exclusions do not
+  prevent navigation. Unqualified calls prefer the current project; conflicting dependency definitions
+  remain ambiguous. Dynamic dispatch and runtime-generated namespaces remain deferred.
 
 Macro signatures and supported statement operands have expression PSI. Other statement headers retain
 a balanced token structure; full statement grammar and lexical-scope semantics remain incomplete. This is a Jinja editing subset,
-not runtime equivalence. Conditional expressions, call argument unpacking, slice syntax and extension
-semantics still need coverage. SQL coloring is lexical, without dialect-specific assistance; SQL strings
+not runtime equivalence. Inline conditionals (`value if condition else alternative`, including nested
+alternatives and optional else) are supported, alongside filtered for loops. Call argument unpacking,
+full slice syntax and extension semantics still need coverage. SQL coloring is lexical, without dialect-specific assistance; SQL strings
 and comments crossing a Jinja hole are not yet context-aware.
 
 ## Open a template
@@ -43,16 +61,67 @@ so native SQL/TextMate hosts can still display **SQL** or **TextMate** as their 
 PyCharm's legacy SQL syntax-table files and otherwise unclaimed SQL files receive a **dbt Jinja**
 file type beneath a dbt marker. This fallback also works when commercial modules are disabled.
 Default generated directories `target`, `logs` and `.git` are excluded. SQL files outside dbt project
-roots keep their normal SQL editing behavior. Custom output-directory configuration is not yet parsed.
+roots keep their normal SQL editing behavior. Virtual environments and `node_modules` are also excluded.
+Custom output-directory configuration is not yet parsed. Dependencies are only read; dbt commands and
+project code are never executed for editor assistance. The name index tokenizes candidate template files
+independently of file type; semantic assistance is scoped to the detected dbt root and its installed packages.
 
 The plugin also associates `*.dbt.sql`, `*.jinja` and `*.j2`. Open
 [examples/local-macros.dbt.sql](examples/local-macros.dbt.sql) to try completion, navigation and usages.
 For a file without a detected dbt root, use **Override File Type** and
-choose **dbt Jinja**. After updating to dbt Lens 0.1.5, restart the IDE and reopen the model to refresh its
+choose **dbt Jinja**. After updating to dbt Lens 0.1.7, restart the IDE and reopen the model to refresh its
 existing language selection.
 
 The plugin keeps its original `dev.dbt.jinja` ID so dbt Lens upgrades existing installations.
 Its internal language and file-type name remains **dbt Jinja**.
+
+## YAML assistance
+
+With JetBrains JSON and YAML support installed, dbt Lens applies bundled schemas to root-level
+`dbt_project.yml`, `profiles.yml`, `packages.yml`, `dependencies.yml`, and `selectors.yml` (also `.yaml`
+for those configuration names). Resource YAML under the standard model/seed/snapshot/test/analysis/macro
+folders receives the dbt properties schema; literal inline or indented block path lists in `dbt_project.yml` override those
+folder defaults. Unrelated YAML, non-dbt projects and generated files keep their normal behavior.
+The standard `~/.dbt/profiles.yml` also receives assistance when a dbt root is an IDE content root.
+
+Project, packages, dependencies, selectors and properties schemas come from
+[dbt Labs' official schema repository](https://github.com/dbt-labs/dbt-jsonschema), pinned at
+`6a401244651d3b5e0fd2f7cfcfb120187118edb4` with its Apache-2.0 license. They are bundled with no
+external schema references, so they work offline. Profiles use a dbt Lens schema for the common structure;
+adapter-specific connection keys remain open and Jinja string values are accepted. These are schema
+editor checks, not adapter/runtime validation. User schema mappings retain JetBrains' normal precedence.
+No YAML-language replacement or Jinja execution is involved.
+
+## Resource navigation
+
+Go to Declaration on a literal `ref`/`source` call or its string arguments opens the resource definition.
+`ref` finds SQL/Python models, CSV seeds and SQL/YAML snapshots, including installed dependencies and
+`ref('package', 'model')`. Integer or quoted `v`/`version` arguments and model YAML `latest_version`/`defined_in`
+select a versioned model; YAML supplies a definition target when the implementation file is missing.
+`source('logical_source', 'table')` opens the table's YAML name, rather than its physical identifier.
+With native YAML installed, exposure `depends_on` calls and wrapped Jinja calls in dbt property YAML
+also navigate; `metric` links to metric YAML definitions. Exposures themselves are not `ref` targets.
+
+Discovery reads literal configured resource folders, including inline and block path lists. Current
+project resources take precedence over dependencies; duplicates remain multiple navigation candidates.
+Without `latest_version`, version inference currently supports integer identifiers; other version schemes
+need an explicit `latest_version`. Dynamic expressions, unresolved versions and shadowed calls stay unresolved. Generated/unrelated
+folders are excluded. Resource catalogs update after committed unsaved edits and VFS changes, use
+cancellation checks, and limit YAML/snapshot reads to 2 MB. YAML metadata is optional; SQL models,
+seeds and SQL snapshots resolve without the YAML plugin. No manifest, adapter or dbt execution is needed.
+Resource completion, Find Usages/rename and runtime-generated resource names remain deferred.
+
+## SQL editing modes
+
+The default Jinja editor uses dialect-independent **lexical SQL coloring**. It does not provide native
+SQL dialect parsing, completion or inspections, and it substitutes the editor language within detected
+dbt SQL files. SQL file associations remain owned by the IDE.
+
+To retain JetBrains' full SQL editor and its existing dialect/data-source settings, open
+**Settings → Languages & Frameworks → dbt Lens** and enable **Keep the native SQL editor in dbt projects**.
+Restart the IDE after changing it. This mode leaves native SQL files to JetBrains; dbt Lens's Jinja
+features in those `.sql` files are disabled. Explicit `.jinja`/`.j2`/`.dbt.sql` templates remain Jinja editors.
+Simultaneous native SQL assistance and complete Jinja editing remain a separate integration milestone.
 
 ## Build and test
 
@@ -69,7 +138,7 @@ For binary compatibility and API checks against the same SDK, run `./gradlew ver
 Use `-PverifierOffline=true` to restrict the verifier to already downloaded dependencies; the validation
 record describes the limits of the offline result.
 
-The installation ZIP appears at `build/distributions/dbt-lens-0.1.5.zip`. Use **Settings → Plugins → Install Plugin
+The installation ZIP appears at `build/distributions/dbt-lens-0.1.7.zip`. Use **Settings → Plugins → Install Plugin
 from Disk** to install it in a compatible IDE, or `./gradlew runIde` to start a separate development IDE.
 The compatibility range in the descriptor is builds 253–262, including PyCharm 2026.2. Only versions
 actually exercised in [docs/feasibility.md](docs/feasibility.md) are validated; this development build is
@@ -97,6 +166,7 @@ works with the original IntelliJ 2025.3 baseline.
 Building directly against the PyCharm 2026.2 SDK also requires a full JDK 25; its bundled runtime alone
 does not include the compiler. Use `-PwithTextmateTests=false` to exercise plain-text SQL with both
 TextMate and database test dependencies absent. TextMate regression tests run by default.
+Use `-PwithYamlTests=false` to also disable JSON/YAML support and omit schema integration tests.
 The test sandbox explicitly disables Database Tools unless `-PwithSqlTests=true`; omitting its
 dependency alone would still allow the bundled plugin to load. Add `-PfreeEditionTests=true` when
 testing PyCharm to disable commercial modules as well.
@@ -118,8 +188,7 @@ integration is deferred.
 
 ## Deferred work
 
-Configuration-aware resource discovery; dependency-package resolution; model/source/YAML
-navigation; manifest ingestion; complete scope-aware resolution; resource completion; documentation and
+Complete configuration-aware resource discovery; manifest ingestion; complete scope-aware resolution; resource completion;
 parameter information; argument/resource inspections; safe rename; compiled SQL previews and dbt execution.
 Rename is explicitly rejected until the project-wide reference model exists. No project code or dbt command
 is executed to provide editor features.
@@ -130,7 +199,7 @@ See [docs/feasibility.md](docs/feasibility.md) for the integration gate and the 
 
 `main` initially contains repository basics. The implementation is reviewed as stacked PRs:
 `0.1.0` → `main`, `0.1.1` → `0.1.0`, `0.1.2` → `0.1.1`, `0.1.3` → `0.1.2`, `0.1.4` → `0.1.3`,
-and `0.1.5` → `0.1.4`.
+`0.1.5` → `0.1.4`, `0.1.6` → `0.1.5`, and `0.1.7` → `0.1.6`.
 Review each PR against its immediate predecessor. Earlier development versions retain their original
 names and compatibility ranges; dbt Lens branding is introduced in 0.1.4.
 

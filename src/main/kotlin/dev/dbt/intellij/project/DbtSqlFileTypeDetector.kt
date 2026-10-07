@@ -29,7 +29,7 @@ class DbtSqlFileTypeOverrider : FileTypeOverrider {
 }
 
 internal object DbtDirectories {
-    private val generatedDirectories = setOf("target", "logs", ".git")
+    private val generatedDirectories = setOf("target", "logs", ".git", ".venv", "venv", "node_modules")
     fun root(directory: VirtualFile?, boundary: VirtualFile?): VirtualFile? {
         var current = directory
         while (current != null) {

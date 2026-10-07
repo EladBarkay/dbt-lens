@@ -19,6 +19,10 @@ import java.util.concurrent.ConcurrentHashMap
 class DbtSqlLanguageSubstitutor : LanguageSubstitutor() {
     override fun getLanguage(file: VirtualFile, project: Project): Language? {
         if (!file.isValid || file.isDirectory || !file.extension.equals("sql", ignoreCase = true) || project.isDisposed) return null
+        val sql = Language.findLanguageByID("SQL")
+        val host = com.intellij.openapi.fileTypes.FileTypeManager.getInstance().getFileTypeByFileName(file.name)
+        if (project.getService(dev.dbt.intellij.config.DbtSettings::class.java).preserveNativeSql && sql != null &&
+            host is com.intellij.openapi.fileTypes.LanguageFileType && host.language.isKindOf(sql)) return null
         return if (project.getService(DbtProjectRoots::class.java).rootFor(file) != null) DbtLanguage else null
     }
 }
@@ -42,7 +46,7 @@ class DbtProjectRoots(private val project: Project) : Disposable {
     }
 
     private fun discover(directory: VirtualFile): VirtualFile? {
-        val boundary = ProjectFileIndex.getInstance(project).getContentRootForFile(directory) ?: return null
+        val boundary = ProjectFileIndex.getInstance(project).getContentRootForFile(directory)
         return DbtDirectories.root(directory, boundary)
     }
 

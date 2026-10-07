@@ -1,0 +1,5 @@
+<idea-plugin>
+    <extensions defaultExtensionNs="JavaScript">
+        <JsonSchema.ProviderFactory implementation="dev.dbt.intellij.config.DbtSchemaProviderFactory"/>
+    </extensions>
+</idea-plugin>
