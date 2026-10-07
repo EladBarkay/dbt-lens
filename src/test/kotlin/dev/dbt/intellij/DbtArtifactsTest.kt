@@ -107,13 +107,16 @@ class DbtArtifactsTest : BasePlatformTestCase() {
         assertTrue(snapshot.messages.single().startsWith("Catalog unavailable"))
     }
     fun testOlderCompiledSqlAndSavedCompiledFileFallback() {
-        val json = manifest(node("orders").apply { addProperty("compiled_sql", "select 8") }, node("other"))
+        val json = manifest(node("orders").apply { addProperty("compiled_sql", "select 8") }, node("other").apply { addProperty("compiled", true) })
         json.getAsJsonObject("metadata").addProperty("dbt_schema_version", "https://schemas.getdbt.com/dbt/manifest/v8.json")
         val file = setup(json)
         myFixture.addFileToProject("repo/warehouse/target/compiled/warehouse/models/other.sql", "select 9")
         val snapshot = saved(file); val request = service.request(file)!!
         assertEquals("select 8", ArtifactReader.compiled(request, snapshot.nodes.getValue("model.warehouse.orders")))
         assertEquals("select 9", ArtifactReader.compiled(request, snapshot.nodes.getValue("model.warehouse.other")))
+        json.getAsJsonObject("nodes").getAsJsonObject("model.warehouse.other").addProperty("compiled", false)
+        Files.writeString(request.target!!.resolve("manifest.json"), json.toString())
+        assertNull(ArtifactReader.compiled(request, saved(file).nodes.getValue("model.warehouse.other")))
     }
     fun testUnsavedSourceChangesAreReportedAndMacroCommentsRemainPrimary() {
         val macroText = "{% macro format(value) %}{{ value }}{% endmacro %}"

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.4 — Local dbt compilation
+
+Consolidates original PRs #14.
+
+Explicit cancellable local manifest generation, current/project compilation and argument-aware macro invocation.
+
 ## 0.2.3 — Saved artifacts
 
 Consolidates original PRs #12–#13.

@@ -18,6 +18,7 @@ import com.intellij.psi.PsiManager
 import com.intellij.ui.JBColor
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.content.ContentFactory
+import dev.dbt.intellij.cli.*
 import java.awt.*
 import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
@@ -32,9 +33,10 @@ class DbtArtifactToolWindow : ToolWindowFactory {
     }
 }
 
-/** One shared artifact snapshot drives preview, documentation and lineage; no CLI process. */
+/** One shared artifact snapshot drives preview, docs and lineage; CLI actions are explicit. */
 class DbtArtifactPanel(private val project: Project) : JPanel(BorderLayout()), Disposable {
     private val service = project.getService(DbtArtifacts::class.java)
+    private val cli = project.getService(DbtCli::class.java)
     private val status = JLabel("Open a file inside a dbt project")
     private val nodes = JComboBox<ArtifactNode>()
     private val direction = JComboBox(LineageDirection.entries.toTypedArray())
@@ -43,6 +45,17 @@ class DbtArtifactPanel(private val project: Project) : JPanel(BorderLayout()), D
     private val editor: Editor = EditorFactory.getInstance().createEditor(EditorFactory.getInstance().createDocument(""), project,
         FileTypeManager.getInstance().getFileTypeByExtension("sql"), true)
     private val graph = LineageGraph(::navigate)
+    private val tabs = JTabbedPane()
+    private val commandStatus = JLabel()
+    private val output = JTextArea().apply {
+        isEditable = false; lineWrap = true
+        font = Font(Font.MONOSPACED, Font.PLAIN, com.intellij.util.ui.UIUtil.getLabelFont().size)
+    }
+    private val generate = JButton("Generate manifest").apply { addActionListener { runCommand(DbtCommandKind.PARSE) } }
+    private val compile = JButton("Compile current").apply { addActionListener { runCommand(DbtCommandKind.COMPILE) } }
+    private val compileProject = JButton("Compile project").apply { addActionListener { runCommand(DbtCommandKind.PROJECT) } }
+    private val cancel = JButton("Cancel").apply { addActionListener { cli.cancel() } }
+    private var handledCommand = 0L
     private var file: VirtualFile? = null
     private var request: ArtifactRequest? = null
     private var snapshot = ArtifactSnapshot()
@@ -67,8 +80,17 @@ class DbtArtifactPanel(private val project: Project) : JPanel(BorderLayout()), D
             add(nodes, BorderLayout.CENTER)
             add(JButton("Refresh saved output").apply { addActionListener { load(file, true) } }, BorderLayout.EAST)
         }
-        add(JPanel(BorderLayout()).apply { add(toolbar, BorderLayout.NORTH); add(status, BorderLayout.SOUTH) }, BorderLayout.NORTH)
-        val tabs = JTabbedPane()
+        val commands = JPanel(GridLayout(0, 2, 4, 4)).apply {
+            add(generate); add(compile); add(compileProject); add(cancel)
+            add(JButton("dbt settings").apply { addActionListener {
+                com.intellij.openapi.options.ShowSettingsUtil.getInstance().showSettingsDialog(project, "dbt Lens")
+            } })
+        }
+        add(JPanel(BorderLayout()).apply {
+            add(toolbar, BorderLayout.NORTH)
+            add(commands, BorderLayout.CENTER)
+            add(JPanel(java.awt.GridLayout(0, 1)).apply { add(status); add(commandStatus) }, BorderLayout.SOUTH)
+        }, BorderLayout.NORTH)
         tabs.addTab("Compiled SQL", editor.component)
         tabs.addTab("Documentation", JBScrollPane(docs))
         tabs.addTab("Lineage", JPanel(BorderLayout()).apply {
@@ -78,6 +100,7 @@ class DbtArtifactPanel(private val project: Project) : JPanel(BorderLayout()), D
             }, BorderLayout.NORTH)
             add(JBScrollPane(graph), BorderLayout.CENTER)
         })
+        tabs.addTab("Command output", JBScrollPane(output))
         add(tabs, BorderLayout.CENTER)
         nodes.addActionListener { if (!filling) render() }
         direction.addActionListener { renderGraph() }
@@ -85,13 +108,17 @@ class DbtArtifactPanel(private val project: Project) : JPanel(BorderLayout()), D
         project.messageBus.connect(this).subscribe(FileEditorManagerListener.FILE_EDITOR_MANAGER, object : FileEditorManagerListener {
             override fun selectionChanged(event: FileEditorManagerEvent) { load(event.newFile) }
         })
+        project.messageBus.connect(this).subscribe(DbtCliListener.TOPIC, DbtCliListener(::commandChanged))
+        commandChanged(cli.state)
         load(FileEditorManager.getInstance(project).selectedFiles.firstOrNull())
     }
-    fun load(active: VirtualFile?, force: Boolean = false) {
+    fun load(active: VirtualFile?, force: Boolean = false, preferred: String? = null) {
+        val wanted = preferred ?: (nodes.selectedItem as? ArtifactNode)?.id
         file = active
         val ticket = ++generation
         ++rendering
         request = null
+        updateCommands()
         snapshot = ArtifactSnapshot()
         filling = true; nodes.removeAllItems(); filling = false
         setSql(""); docs.text = ""; graph.show(snapshot, null, 1, LineageDirection.BOTH)
@@ -107,7 +134,11 @@ class DbtArtifactPanel(private val project: Project) : JPanel(BorderLayout()), D
             ApplicationManager.getApplication().invokeLater {
                 if (disposed || project.isDisposed || ticket != generation) return@invokeLater
                 request = context; snapshot = result ?: ArtifactSnapshot()
-                filling = true; matches.forEach(nodes::addItem); filling = false
+                filling = true; matches.forEach(nodes::addItem)
+                matches.indexOfFirst { it.id == wanted }.takeIf { it >= 0 }?.let { nodes.selectedIndex = it }
+                filling = false
+                updateCommands()
+                if (refreshCompletedCommand(cli.state)) return@invokeLater
                 when {
                     context == null -> status.text = "This file is outside a dbt project"
                     result?.valid != true -> status.text = result?.messages?.joinToString("; ").orEmpty()
@@ -134,13 +165,83 @@ class DbtArtifactPanel(private val project: Project) : JPanel(BorderLayout()), D
             ApplicationManager.getApplication().invokeLater {
                 if (disposed || project.isDisposed || ticket != rendering) return@invokeLater
                 docs.text = info.first; docs.caretPosition = 0
-                setSql(code ?: if (node.kind == "macro") "-- A macro definition is not compiled SQL.\n-- It needs arguments and a dbt context.\n-- Its documentation and dependencies are available in the other tabs."
+                val inline = cli.state.takeIf { it.phase == DbtCliPhase.SUCCEEDED && it.command?.kind == DbtCommandKind.INLINE &&
+                    it.command.sourcePath == active.path && it.command.resourceId == node.id }?.compiled
+                setSql(inline ?: code ?: if (node.kind == "macro") "-- A macro definition is not compiled SQL.\n-- Use Compile current to supply a macro call and arguments.\n-- Its documentation and dependencies are available in the other tabs."
                     else if (node.language == "python" || node.originalPath.endsWith(".py")) "-- Python models do not have a SQL preview.\n-- Their documentation and dependencies are available in the other tabs."
-                    else "-- No saved compiled SQL for this resource.\n-- Generate output with dbt outside the plugin, then refresh.")
+                    else "-- No saved compiled SQL for this resource.\n-- Use Compile current or Compile project to generate it.")
                 status.text = (if (info.second) "Source changed; saved output may be outdated" else "Saved dbt output${saved.generatedAt?.let { " · $it" }.orEmpty()}") +
                     saved.messages.takeIf { it.isNotEmpty() }?.joinToString("; ", " · ").orEmpty()
             }
         }
+    }
+    private fun updateCommands() {
+        val ready = request?.let { it.problem == null && it.target != null } == true && !cli.state.running
+        generate.isEnabled = ready; compileProject.isEnabled = ready
+        compile.isEnabled = ready && file?.extension.equals("sql", true)
+        compile.toolTipText = "Compile the selected SQL resource or an explicit macro call; may query the warehouse"
+        compileProject.toolTipText = "Compile this dbt project; may query the warehouse"
+        cancel.isEnabled = cli.state.running
+    }
+    private fun commandChanged(state: DbtCliState) {
+        if (disposed) return
+        commandStatus.text = state.message
+        commandStatus.toolTipText = state.command?.context?.root?.toString()
+        if (output.text != state.output) { output.text = state.output; output.caretPosition = output.document.length }
+        updateCommands()
+        refreshCompletedCommand(state)
+    }
+    private fun refreshCompletedCommand(state: DbtCliState): Boolean {
+        if (state.running || state.id == 0L || state.id == handledCommand) return false
+        // A file switch can still be resolving its project when the command completes.
+        if (state.phase == DbtCliPhase.SUCCEEDED && request == null) return false
+        handledCommand = state.id
+        if (state.phase == DbtCliPhase.SUCCEEDED && state.command?.context?.root == request?.root) {
+            load(file, true, state.command?.resourceId)
+            return true
+        }
+        return false
+    }
+    internal fun executeCommand(command: DbtCommand): Boolean = cli.start(command).also { started ->
+        if (started) { updateCommands(); tabs.selectedIndex = 3 }
+    }
+    private fun runCommand(kind: DbtCommandKind) {
+        val active = file ?: return
+        val documents = com.intellij.openapi.fileEditor.FileDocumentManager.getInstance()
+        val psi = PsiManager.getInstance(project).findFile(active) ?: return
+        val root = service.request(psi)?.root ?: return
+        documents.unsavedDocuments.filter { doc -> documents.getFile(doc)?.path?.let { java.nio.file.Path.of(it).startsWith(root) } == true }
+            .forEach(documents::saveDocument)
+        com.intellij.psi.PsiDocumentManager.getInstance(project).commitAllDocuments()
+        val context = service.request(psi) ?: return // Saving configuration may change the output directory.
+        try {
+            val command = if (kind != DbtCommandKind.COMPILE) DbtCommand(kind, context) else {
+                val selected = nodes.selectedItem as? ArtifactNode
+                val declarations = com.intellij.psi.util.PsiTreeUtil.findChildrenOfType(psi, dev.dbt.intellij.psi.DbtMacro::class.java)
+                val macroNames = when {
+                    selected?.kind == "macro" -> listOf(selected.name) // Also works with the native SQL editor.
+                    selected != null -> emptyList() // A model may contain local macro declarations.
+                    else -> declarations.mapNotNull { it.name }
+                }
+                val namespace = dev.dbt.intellij.psi.ProjectMacros.namespace(psi)
+                    ?: throw IllegalArgumentException("The dbt package needs a literal name in dbt_project.yml")
+                if (macroNames.isNotEmpty()) {
+                    val calls = macroNames.associateWith { name -> "{{ $namespace.$name() }}" }
+                    if (calls.isEmpty()) return
+                    val dialog = DbtMacroCallDialog(project, calls)
+                    if (!dialog.showAndGet()) return
+                    DbtCommand(DbtCommandKind.INLINE, context, invocation = dialog.invocation, sourcePath = active.path,
+                        resourceId = "macro.$namespace.${dialog.macroName}")
+                } else {
+                    val ownRoot = dev.dbt.intellij.psi.ProjectMacros.root(psi) ?: return
+                    val relative = selected?.originalPath ?: com.intellij.openapi.vfs.VfsUtilCore.getRelativePath(active, ownRoot) ?: return
+                    val selector = selected?.let(DbtCommandPlanner::selector) ?: if (ownRoot.path == root.toString())
+                        DbtCommandPlanner.selector(namespace, relative) else throw IllegalArgumentException("Generate manifest before compiling an installed dependency resource")
+                    DbtCommand(kind, context, selector = selector, sourcePath = active.path)
+                }
+            }
+            if (!executeCommand(command)) commandStatus.text = "A dbt command is already running. Cancel it or wait for it to finish."
+        } catch (e: IllegalArgumentException) { commandStatus.text = e.message.orEmpty() }
     }
     private fun renderGraph() = graph.show(snapshot, (nodes.selectedItem as? ArtifactNode)?.id, depth.value as Int,
         direction.selectedItem as LineageDirection)
