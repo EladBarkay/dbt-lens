@@ -250,4 +250,43 @@ class DbtArtifactsTest : BasePlatformTestCase() {
             Files.deleteIfExists(outside.resolve("manifest.json")); Files.deleteIfExists(outside)
         }
     }
+    fun testDocumentationRenderingUsesIdeFontAndWrapsLongTestNames() {
+        val testName = "relationships_stg_orders__customer_id__customer_id__ref_customers".repeat(3)
+        val file = setup(manifest(node("orders", raw = "select 1").apply {
+            addProperty("description", "One record per order.")
+            addProperty("relation_name", "`elementary_ci`.`elad_test_catalog`.`stg_orders`")
+            add("columns", JsonObject().apply {
+                add("order_id", obj("name" to "order_id", "description" to "Primary <key>."))
+                add("status", obj("name" to "status"))
+                add("customer_id", obj("name" to "customer_id"))
+            })
+        }, node(testName, "test", path = "models/schema.yml").apply {
+            add("depends_on", JsonObject().apply { add("nodes", array("model.warehouse.orders")) })
+        }))
+        myFixture.addFileToProject("repo/warehouse/models/orders.sql", "select 2")
+        val snapshot = saved(file)
+        val resource = snapshot.nodes.getValue("model.warehouse.orders")
+        val pane = ArtifactDocumentationPane()
+        try {
+            pane.text = ArtifactDocumentation.body(file, resource, snapshot, showStaleness = false)
+            assertEquals(com.intellij.util.ui.UIUtil.getLabelFont().family, pane.font.family)
+            assertFalse("Body text must not inherit a bold label font", pane.font.isBold)
+            assertFalse(pane.isEditable)
+            assertFalse(pane.text.contains("Source has changed"))
+            assertTrue(pane.text.contains("Description"))
+            assertFalse(pane.text.contains(">Type<"))
+            assertTrue(ArtifactDocumentation.body(file, resource, snapshot).contains("Source has changed"))
+            for (width in listOf(360, 800)) {
+                pane.setSize(width, 1000)
+                pane.doLayout()
+                assertTrue("Documentation must wrap at $width px, minimum=${pane.minimumSize.width}", pane.minimumSize.width <= width)
+                System.getenv("DBT_DOCS_RENDER_DIR")?.let { directory ->
+                    val image = java.awt.image.BufferedImage(width, 1000, java.awt.image.BufferedImage.TYPE_INT_RGB)
+                    image.createGraphics().also { graphics -> try { pane.paint(graphics) } finally { graphics.dispose() } }
+                    Files.createDirectories(java.nio.file.Path.of(directory))
+                    javax.imageio.ImageIO.write(image, "png", java.nio.file.Path.of(directory, "docs-$width.png").toFile())
+                }
+            }
+        } finally { com.intellij.openapi.util.Disposer.dispose(pane) }
+    }
 }

@@ -103,7 +103,7 @@ independently of file type; semantic assistance is scoped to the detected dbt ro
 The plugin also associates `*.dbt.sql`, `*.jinja` and `*.j2`. Open
 [examples/local-macros.dbt.sql](examples/local-macros.dbt.sql) to try completion, navigation and usages.
 For a file without a detected dbt root, use **Override File Type** and
-choose **dbt Jinja**. After updating to dbt Lens 0.1.10, restart the IDE and reopen the model to refresh its
+choose **dbt Jinja**. After updating to dbt Lens 0.1.11, restart the IDE and reopen the model to refresh its
 existing language selection.
 
 The plugin keeps its original `dev.dbt.jinja` ID so dbt Lens upgrades existing installations.
@@ -198,7 +198,7 @@ For binary compatibility and API checks against the same SDK, run `./gradlew ver
 Use `-PverifierOffline=true` to restrict the verifier to already downloaded dependencies; the validation
 record describes the limits of the offline result.
 
-The installation ZIP appears at `build/distributions/dbt-lens-0.1.10.zip`. Use **Settings → Plugins → Install Plugin
+The installation ZIP appears at `build/distributions/dbt-lens-0.1.11.zip`. Use **Settings → Plugins → Install Plugin
 from Disk** to install it in a compatible IDE, or `./gradlew runIde` to start a separate development IDE.
 The compatibility range in the descriptor is builds 253–262, including PyCharm 2026.2. Only versions
 actually exercised in [docs/feasibility.md](docs/feasibility.md) are validated; this development build is
@@ -256,7 +256,8 @@ multiple macros or YAML resources defined in the same file.
 - **Compiled SQL** shows saved `compiled_code`/`compiled_sql`, with a generated-file fallback. The viewer
   is read-only and never changes source or output files. Resources without compiled output receive a
   clear message. Macro definitions and Python model code are not displayed as compiled SQL.
-- **Documentation** adds saved descriptions, documented macro arguments, columns/types, physical relation
+- **Documentation** uses the IDE font/theme with wrapped text, labeled column tables and one test per
+  list item. It adds saved descriptions, documented macro arguments, columns/types, physical relation
   names and associated tests. Existing source comments remain first in macro hover documentation;
   literal `ref`/`source` calls can show resource metadata through the existing provider. Descriptions
   are escaped plain text; Markdown/Jinja is not evaluated. Catalog generation errors are labeled.
@@ -302,7 +303,7 @@ See [docs/feasibility.md](docs/feasibility.md) for the integration gate and the 
 `main` initially contains repository basics. The implementation is reviewed as stacked PRs:
 `0.1.0` → `main`, `0.1.1` → `0.1.0`, `0.1.2` → `0.1.1`, `0.1.3` → `0.1.2`, `0.1.4` → `0.1.3`,
 `0.1.5` → `0.1.4`, `0.1.6` → `0.1.5`, `0.1.7` → `0.1.6`, `0.1.8` → `0.1.7`, `0.1.9` → `0.1.8`,
-and `0.1.10` → `0.1.9`.
+`0.1.10` → `0.1.9`, and `0.1.11` → `0.1.10`.
 Review each PR against its immediate predecessor. Earlier development versions retain their original
 names and compatibility ranges; dbt Lens branding is introduced in 0.1.4.
 
