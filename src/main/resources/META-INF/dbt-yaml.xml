@@ -1,5 +1,6 @@
 <idea-plugin>
     <extensions defaultExtensionNs="dev.dbt.jinja">
+        <dispatchConfiguration implementation="dev.dbt.intellij.dispatch.DispatchYamlConfiguration"/>
         <resourceMetadata implementation="dev.dbt.intellij.resources.DbtYamlResourceMetadata"/>
     </extensions>
     <extensions defaultExtensionNs="com.intellij">

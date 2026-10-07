@@ -32,7 +32,7 @@ class DbtVariable(node: ASTNode) : ASTWrapperPsiElement(node) {
         val namespace = access?.firstChild?.takeIf { it is DbtVariable }?.text
         val filter = use == DbtCallables.Use.FILTER
         if (filter && namespace == null && text in DbtCallables.BUILTIN_FILTERS) return null
-        if (access == null && !filter && LocalVariables.declaration(this) != null) return LocalVariableReference(this)
+        if (access == null && !filter && LocalVariables.candidates(this).isNotEmpty()) return LocalVariableReference(this)
         if (access != null && (access.children.size != 2 || namespace == null || !ProjectMacros.hasNamespace(this, namespace))) return null
         // The base of a qualified access is a namespace/object, not the referenced member.
         if (access == null && parent.node.elementType == DbtTypes.ACCESS && parent.firstChild == this) return null
@@ -62,17 +62,14 @@ object LocalMacros {
         }
     fun candidates(file: PsiFile, name: String): List<DbtMacro> = declarations(file).filter { it.name == name }
     fun isShadowed(element: PsiElement, name: String): Boolean {
-        val owner = PsiTreeUtil.getParentOfType(element, DbtMacro::class.java)
-        if (name in (owner?.parameters ?: emptyList())) return true
-        // Conservatively exclude bindings throughout the file, but never treat an assignment's RHS
-        // or a loop's iterable as a binding. Those expressions can call project macros.
+        if (LocalVariables.candidates(element, name).isNotEmpty()) return true
+        // Imports are retained as balanced tokens; until their grammar is modeled, suppress
+        // imported names conservatively rather than guessing a project macro.
         val statements = PsiTreeUtil.collectElements(element.containingFile) { it.node?.elementType == DbtTypes.STATEMENT }
         for (statement in statements) {
             val leaves = statement.node.getChildren(null).filter { it.elementType != com.intellij.psi.TokenType.WHITE_SPACE }
             val keyword = leaves.getOrNull(1)?.text
-            if (keyword in setOf("set", "for")) {
-                if (leaves.any { it.elementType == DbtTypes.BINDING_NAME && it.text == name }) return true
-            } else if (keyword in setOf("import", "from", "with")) {
+            if (keyword in setOf("import", "from")) {
                 if (leaves.drop(2).any { it.elementType in setOf(DbtTypes.IDENTIFIER, DbtTypes.KEYWORD) && it.text == name }) return true
             }
         }

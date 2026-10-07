@@ -44,8 +44,8 @@ object ProjectMacros {
             else root.findFileByRelativePath(path)
     }
 
-    internal fun roots(element: PsiElement): List<VirtualFile> {
-        val own = root(element) ?: return emptyList()
+    internal fun hostRoot(element: PsiElement): VirtualFile? {
+        val own = root(element) ?: return null
         var host = own
         var ancestor = own.parent
         while (ancestor != null) {
@@ -55,6 +55,12 @@ object ProjectMacros {
             }
             ancestor = ancestor.parent
         }
+        return host
+    }
+
+    internal fun roots(element: PsiElement): List<VirtualFile> {
+        val own = root(element) ?: return emptyList()
+        val host = hostRoot(element) ?: return emptyList()
         val dependencies = installDirectory(element.project, host)?.children?.filter {
             it.isDirectory && it.findChild("dbt_project.yml")?.isDirectory == false
         } ?: emptyList()
@@ -87,15 +93,19 @@ object ProjectMacros {
         return packages.filter { namespace != null || it != current }.flatMap(::inPackage)
     }
 
-    fun completion(element: PsiElement, prefix: String, namespace: String? = null): List<DbtMacro> {
-        if (root(element) == null || DumbService.isDumb(element.project)) return emptyList()
+    internal fun names(element: PsiElement): Set<String> {
+        if (root(element) == null || DumbService.isDumb(element.project)) return emptySet()
         val catalog = element.project.getService(DependencyMacros::class.java)
         val keys = FileBasedIndex.getInstance().getAllKeys(DbtMacroIndex.NAME, element.project).toMutableSet()
         roots(element).filter { it != root(element) || !com.intellij.openapi.roots.ProjectFileIndex.getInstance(element.project).isInContent(it) }
             .forEach { keys.addAll(catalog.names(it)) }
-        return keys.asSequence().filter { it.startsWith(prefix, ignoreCase = true) }
-            .flatMap { candidates(element, it, namespace).asSequence() }.toList()
+        return keys
     }
+
+    fun completion(element: PsiElement, prefix: String, namespace: String? = null): List<DbtMacro> =
+        names(element).asSequence().filter { it.startsWith(prefix, ignoreCase = true) }
+            .flatMap { candidates(element, it, namespace).asSequence() }.toList()
+
 }
 
 @Service(Service.Level.PROJECT)

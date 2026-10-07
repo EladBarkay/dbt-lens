@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.2 — Smart editing and dispatch
+
+Consolidates original PRs #10–#11.
+
+Scoped local usages, member/filter/keyword completion, live block templates, Enter crash regression and adapter dispatch navigation.
+
 ## 0.2.1 — Project and YAML navigation
 
 Consolidates original PRs #8–#9.

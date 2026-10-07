@@ -9,7 +9,7 @@ plugins {
 }
 
 group = "dev.dbt.intellij"
-version = "0.2.1"
+version = "0.2.2"
 
 repositories {
     mavenCentral()
@@ -87,7 +87,7 @@ tasks.test {
     systemProperty("java.awt.headless", "true")
     systemProperty("dbt.jinja.test.sql", providers.gradleProperty("withSqlTests").orNull == "true")
     systemProperty("dbt.jinja.test.textmate", providers.gradleProperty("withTextmateTests").orNull != "false")
-    if (providers.gradleProperty("withYamlTests").orNull == "false") exclude("**/DbtYamlIntegrationTest*")
+    if (providers.gradleProperty("withYamlTests").orNull == "false") exclude("**/DbtYamlIntegrationTest*", "**/DbtDispatchYamlTest*")
     if (providers.gradleProperty("withSqlTests").orNull != "true") exclude("**/DbtSqlIntegrationTest*")
     if (providers.gradleProperty("withTextmateTests").orNull == "false") {
         filter {

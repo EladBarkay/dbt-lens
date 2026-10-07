@@ -7,11 +7,23 @@ import com.intellij.psi.util.PsiTreeUtil
 import dev.dbt.intellij.lang.DbtTypes as T
 import dev.dbt.intellij.psi.DbtMacro
 import dev.dbt.intellij.psi.DbtVariable
+import dev.dbt.intellij.semantic.DbtTypeInference
 
 /** Static documentation only: never renders Jinja or executes a macro. */
 class DbtDocumentationProvider : AbstractDocumentationProvider() {
     override fun generateDoc(element: PsiElement?, originalElement: PsiElement?): String? {
-        val macro = macro(element) ?: macro(originalElement) ?: return null
+        val macro = macro(element) ?: macro(originalElement)
+        if (macro == null) {
+            val variable = listOfNotNull(originalElement, element).firstNotNullOfOrNull {
+                PsiTreeUtil.getParentOfType(it, DbtVariable::class.java, false)
+            } ?: return null
+            val symbol = DbtTypeInference.symbol(variable) ?: DbtTypeInference.contextual(variable)[variable.text]
+                ?.takeIf { dev.dbt.intellij.psi.LocalVariables.candidates(variable).isEmpty() } ?: return null
+            val signature = symbol.name + symbol.signature?.let { "($it)" }.orEmpty()
+            return "<div class='definition'><pre>${escape(signature)}</pre></div>" +
+                "<div class='content'>${escape(symbol.description)}<br>Type: ${escape(symbol.type.name)}</div>" +
+                "<div class='bottom'><a href='${escape(symbol.url)}'>Documentation</a></div>"
+        }
         val header = macro.firstChild ?: return null
         val signature = header.text.removePrefix("{%-").removePrefix("{%")
             .removeSuffix("-%}").removeSuffix("%}").trim().replace(Regex("\\s+"), " ")

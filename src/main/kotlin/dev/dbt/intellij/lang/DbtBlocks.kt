@@ -6,7 +6,7 @@ import com.intellij.lang.ASTNode
 object DbtBlocks {
     val CLOSING = mapOf("macro" to "endmacro", "if" to "endif", "for" to "endfor", "set" to "endset",
         "call" to "endcall", "filter" to "endfilter", "block" to "endblock", "raw" to "endraw",
-        "with" to "endwith", "snapshot" to "endsnapshot", "test" to "endtest", "materialization" to "endmaterialization")
+        "with" to "endwith", "docs" to "enddocs", "snapshot" to "endsnapshot", "test" to "endtest", "materialization" to "endmaterialization")
 
     fun keyword(statement: ASTNode): ASTNode? = statement.getChildren(null)
         .firstOrNull { it.elementType in setOf(DbtTypes.KEYWORD, DbtTypes.IDENTIFIER) }
