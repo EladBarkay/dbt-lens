@@ -46,6 +46,9 @@ dbt project-intelligence release.
   the same scope share usage searches; nested loop/with scopes remain separate. Go to Declaration on a
   read chooses its latest known definition. Branch-dependent definitions remain multiple candidates.
 - Builtin/member hover documentation and special class highlighting for `api.Relation` and `api.Column`.
+- Optional saved-artifact support: compiled SQL preview, resource/macro documentation and a focused
+  upstream/downstream lineage view in the **dbt Lens** tool window. No dbt command or warehouse query
+  is run by the plugin. See the artifact workflow below.
 - Native YAML completion/validation and dbt icons for project/profile/package/dependency/selector files
   and resource property YAML. YAML retains its native file type and parser.
 - Go to Declaration and Find Usages for static calls to top-level macros in the current dbt project and installed dependencies,
@@ -100,7 +103,7 @@ independently of file type; semantic assistance is scoped to the detected dbt ro
 The plugin also associates `*.dbt.sql`, `*.jinja` and `*.j2`. Open
 [examples/local-macros.dbt.sql](examples/local-macros.dbt.sql) to try completion, navigation and usages.
 For a file without a detected dbt root, use **Override File Type** and
-choose **dbt Jinja**. After updating to dbt Lens 0.2.2, restart the IDE and reopen the model to refresh its
+choose **dbt Jinja**. After updating to dbt Lens 0.2.3, restart the IDE and reopen the model to refresh its
 existing language selection.
 
 The plugin keeps its original `dev.dbt.jinja` ID so dbt Lens upgrades existing installations.
@@ -185,6 +188,7 @@ Requires a **JDK 21** and network access for the first build. The Gradle wrapper
 with a distribution checksum; the Kotlin compiler is 2.3.21 (language/API level 2.2, Java 21 output)
 and the IntelliJ Platform Gradle plugin is 2.19.0.
 The default SDK is IntelliJ IDEA 2025.3.3. No Python interpreter or dbt installation is needed.
+The build resolves its matching JetBrains Runtime automatically, unless a local runtime is supplied.
 
 ```sh
 ./gradlew test verifyPluginProjectConfiguration verifyPluginStructure buildPlugin
@@ -194,7 +198,7 @@ For binary compatibility and API checks against the same SDK, run `./gradlew ver
 Use `-PverifierOffline=true` to restrict the verifier to already downloaded dependencies; the validation
 record describes the limits of the offline result.
 
-The installation ZIP appears at `build/distributions/dbt-lens-0.2.2.zip`. Use **Settings → Plugins → Install Plugin
+The installation ZIP appears at `build/distributions/dbt-lens-0.2.3.zip`. Use **Settings → Plugins → Install Plugin
 from Disk** to install it in a compatible IDE, or `./gradlew runIde` to start a separate development IDE.
 The compatibility range in the descriptor is builds 253–262, including PyCharm 2026.2. Only versions
 actually exercised in [docs/feasibility.md](docs/feasibility.md) are validated; this development build is
@@ -219,8 +223,8 @@ To check a locally installed IDE while continuing to compile against the pinned 
 
 PyCharm 2026.2 requires Java 25 at runtime. The plugin itself remains compiled for Java 21 so it also
 works with the original IntelliJ 2025.3 baseline.
-Building directly against the PyCharm 2026.2 SDK also requires a full JDK 25; its bundled runtime alone
-does not include the compiler. Use `-PwithTextmateTests=false` to exercise plain-text SQL with both
+Building directly against the PyCharm 2026.2 SDK requires a Java 25 runtime; the installed bundled
+runtime includes the compiler used by this build. Use `-PwithTextmateTests=false` to exercise plain-text SQL with both
 TextMate and database test dependencies absent. TextMate regression tests run by default.
 Use `-PwithYamlTests=false` to also disable JSON/YAML support and omit schema integration tests.
 The test sandbox explicitly disables Database Tools unless `-PwithSqlTests=true`; omitting its
@@ -242,10 +246,53 @@ template removal can produce misleading SQL diagnostics and generated identifier
 No SQL completion, formatting, navigation or dialect fidelity is claimed by this prototype. Snowflake
 integration is deferred.
 
+## Saved dbt output
+
+Open a dbt resource file, then **View → Tool Windows → dbt Lens**. The panel reads `manifest.json`
+and optional `catalog.json` from that project's `target` directory, or a literal `target-path` inside
+the project. Installed dependency files use the host project's output. A selector distinguishes
+multiple macros or YAML resources defined in the same file.
+
+- **Compiled SQL** shows saved `compiled_code`/`compiled_sql`, with a generated-file fallback. The viewer
+  is read-only and never changes source or output files. Resources without compiled output receive a
+  clear message. Macro definitions and Python model code are not displayed as compiled SQL.
+- **Documentation** uses the IDE font/theme with wrapped text, labeled column tables and one test per
+  list item. It adds saved descriptions, documented macro arguments, columns/types, physical relation
+  names and associated tests. Existing source comments remain first in macro hover documentation;
+  literal `ref`/`source` calls can show resource metadata through the existing provider. Descriptions
+  are escaped plain text; Markdown/Jinja is not evaluated. Catalog generation errors are labeled.
+- **Lineage** shows saved dependencies, including macro relationships. Choose upstream, downstream or
+  both, at depth 1–3. Click a node to open its local definition. The graph is capped at 80 resources;
+  this is resource lineage, not column lineage.
+
+Generate or update artifacts using your normal dbt workflow outside the plugin, then choose
+**Refresh saved output**. `dbt parse` can supply a manifest without compiled SQL; existing output from
+`dbt compile` supplies compiled resources, and `dbt docs generate` can supply a catalog. Compilation
+may execute introspective warehouse queries through macros; it is not assumed to be an offline operation.
+A macro needs arguments and a dbt context to produce output. Automatic CLI compilation, an argument-aware
+macro workflow and live data preview are deferred.
+
+Saved timestamps are displayed. SQL/Jinja source differences, including unsaved edits, receive a
+staleness warning. Other changes—configuration, dependencies or warehouse state—can also invalidate
+output and are not fully detected. Cached reads follow artifact file changes; opening a resource or
+refreshing the panel reloads it. An initial hover on the UI thread may show artifact details on the
+next hover after its background read finishes. Source navigation keeps working without artifacts.
+
+Manifest schemas v8–v12 and catalog v1 are accepted. Missing, malformed, unsupported or mismatched
+artifacts receive a readable status. Reads are bounded at 64 MB per artifact and 100,000 resources;
+compiled previews are bounded at 2 MB. External/dynamic output paths and symlinks outside the project's
+output directory are rejected. JSON parsing and preview loading run in the background. Native SQL
+coloring is used when available, but the detached viewer does not inherit source-file dialect mappings.
+
+No executable or credential setup is needed for this workflow. A later CLI integration will need the
+dbt executable/environment, profiles location and selected target. For example, a project's `profile`
+in `dbt_project.yml` selects a profile in `profiles.yml`, whose `dev`/`prod` outputs can connect to
+different warehouses. These settings matter when executing dbt, not when reading existing JSON.
+
 ## Deferred work
 
-Complete configuration-aware resource discovery; manifest ingestion; complete scope-aware resolution; resource completion;
-parameter information; argument/resource inspections; safe rename; compiled SQL previews and dbt execution.
+Complete configuration-aware resource discovery; complete scope-aware resolution; resource completion;
+parameter information; argument/resource inspections; safe rename; live compilation and dbt execution.
 Rename is explicitly rejected until the project-wide reference model exists. No project code or dbt command
 is executed to provide editor features.
 
@@ -255,7 +302,8 @@ See [docs/feasibility.md](docs/feasibility.md) for the integration gate and the 
 
 `main` initially contains repository basics. The implementation is reviewed as stacked PRs:
 `0.1.0` → `main`, `0.1.1` → `0.1.0`, `0.1.2` → `0.1.1`, `0.1.3` → `0.1.2`, `0.1.4` → `0.1.3`,
-`0.1.5` → `0.1.4`, `0.1.6` → `0.1.5`, `0.1.7` → `0.1.6`, `0.1.8` → `0.1.7`, and `0.1.9` → `0.1.8`.
+`0.1.5` → `0.1.4`, `0.1.6` → `0.1.5`, `0.1.7` → `0.1.6`, `0.1.8` → `0.1.7`, `0.1.9` → `0.1.8`,
+`0.1.10` → `0.1.9`, and `0.1.11` → `0.1.10`.
 Review each PR against its immediate predecessor. Earlier development versions retain their original
 names and compatibility ranges; dbt Lens branding is introduced in 0.1.4.
 

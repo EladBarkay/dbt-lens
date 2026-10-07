@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.3 — Saved artifacts
+
+Consolidates original PRs #12–#13.
+
+Bounded manifest/catalog loading, compiled SQL previews, documentation and lineage, including native documentation styling.
+
 ## 0.2.2 — Smart editing and dispatch
 
 Consolidates original PRs #10–#11.
