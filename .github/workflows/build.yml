@@ -1,5 +1,12 @@
 name: Plugin checks
-on: [push, pull_request]
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+concurrency:
+  group: plugin-checks-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 permissions:
   contents: read
 jobs:
@@ -7,7 +14,13 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        sql: [false, true]
+        include:
+          - sql: false
+            textmate: true
+          - sql: true
+            textmate: true
+          - sql: false
+            textmate: false
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -15,11 +28,11 @@ jobs:
           distribution: temurin
           java-version: '21'
       - uses: gradle/actions/setup-gradle@v4
-      - run: ./gradlew test verifyPluginProjectConfiguration verifyPluginStructure buildPlugin -PwithSqlTests=${{ matrix.sql }} --console=plain
+      - run: ./gradlew test verifyPluginProjectConfiguration verifyPluginStructure buildPlugin -PwithSqlTests=${{ matrix.sql }} -PwithTextmateTests=${{ matrix.textmate }} --console=plain
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: checks-sql-${{ matrix.sql }}
+          name: checks-sql-${{ matrix.sql }}-textmate-${{ matrix.textmate }}
           path: |
             build/reports/tests/
             build/distributions/

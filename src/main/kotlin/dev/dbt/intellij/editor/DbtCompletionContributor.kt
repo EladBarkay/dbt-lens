@@ -9,6 +9,7 @@ import dev.dbt.intellij.lang.DbtLexer
 import dev.dbt.intellij.lang.DbtTypes as T
 import dev.dbt.intellij.psi.DbtMacro
 import dev.dbt.intellij.psi.LocalMacros
+import dev.dbt.intellij.psi.ProjectMacros
 
 class DbtCompletionContributor : CompletionContributor() {
     init {
@@ -30,19 +31,32 @@ class DbtCompletionContributor : CompletionContributor() {
                     lexer.advance()
                 }
                 if (opener == null) return
-                // Member completion needs a namespace/type resolver; avoid suggesting unqualified symbols after '.'.
-                if (last == T.DOT || parameters.position.prevSibling?.text == ".") return
+                val member = Regex("([A-Za-z_][A-Za-z_0-9]*)\\.[A-Za-z_0-9]*$")
+                    .find(source.subSequence(0, parameters.offset).toString())?.groupValues?.get(1)
+                if (last == T.DOT || member != null || parameters.position.prevSibling?.text == ".") {
+                    if (member != null && member == ProjectMacros.namespace(parameters.originalFile) &&
+                        !LocalMacros.isShadowed(parameters.position, member)) {
+                        addMacros(ProjectMacros.completion(parameters.originalFile, result.prefixMatcher.prefix), result)
+                    }
+                    return
+                }
                 if (opener == T.STMT_OPEN) DbtLexer.KEYWORDS.forEach { result.addElement(LookupElementBuilder.create(it).withTypeText("Jinja")) }
                 BUILTINS.forEach { result.addElement(LookupElementBuilder.create(it).withTypeText("dbt context", true)) }
-                LocalMacros.declarations(parameters.originalFile).forEach { macro ->
-                    macro.name?.let { result.addElement(LookupElementBuilder.create(macro, it)
-                        .withTailText("(${macro.parameters.joinToString()})", true).withTypeText("local macro")) }
-                }
+                val local = LocalMacros.declarations(parameters.originalFile)
+                addMacros(local, result)
+                addMacros(ProjectMacros.completion(parameters.originalFile, result.prefixMatcher.prefix)
+                    .filter { macro -> local.none { it.name == macro.name } }, result)
                 PsiTreeUtil.getParentOfType(parameters.position, DbtMacro::class.java)?.parameters?.forEach {
                     result.addElement(LookupElementBuilder.create(it).withTypeText("parameter", true))
                 }
             }
         })
+    }
+    private fun addMacros(macros: List<DbtMacro>, result: CompletionResultSet) {
+        macros.forEach { macro ->
+            macro.name?.let { result.addElement(LookupElementBuilder.create(macro, it)
+                .withTailText("(${macro.parameters.joinToString()})", true).withTypeText(macro.containingFile.name, true)) }
+        }
     }
     companion object {
         private val BUILTINS = listOf("ref", "source", "var", "config", "target", "this", "adapter", "env_var", "is_incremental", "execute", "return", "log")
