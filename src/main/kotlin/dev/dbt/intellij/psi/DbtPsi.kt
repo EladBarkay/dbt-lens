@@ -65,13 +65,15 @@ object LocalMacros {
     fun isShadowed(element: PsiElement, name: String): Boolean {
         val owner = PsiTreeUtil.getParentOfType(element, DbtMacro::class.java)
         if (name in (owner?.parameters ?: emptyList())) return true
-        // Until lexical bindings have their own PSI, conservatively exclude names bound by statement headers.
-        // This can miss valid navigation after a scope ends, but cannot navigate a shadowed name to a macro.
+        // Conservatively exclude bindings throughout the file, but never treat an assignment's RHS
+        // or a loop's iterable as a binding. Those expressions can call project macros.
         val statements = PsiTreeUtil.collectElements(element.containingFile) { it.node?.elementType == DbtTypes.STATEMENT }
         for (statement in statements) {
             val leaves = statement.node.getChildren(null).filter { it.elementType != com.intellij.psi.TokenType.WHITE_SPACE }
             val keyword = leaves.getOrNull(1)?.text
-            if (keyword in setOf("set", "for", "import", "from", "with")) {
+            if (keyword in setOf("set", "for")) {
+                if (leaves.any { it.elementType == DbtTypes.BINDING_NAME && it.text == name }) return true
+            } else if (keyword in setOf("import", "from", "with")) {
                 if (leaves.drop(2).any { it.elementType in setOf(DbtTypes.IDENTIFIER, DbtTypes.KEYWORD) && it.text == name }) return true
             }
         }

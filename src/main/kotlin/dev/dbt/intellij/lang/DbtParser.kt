@@ -93,6 +93,7 @@ class DbtParser : PsiParser {
         private fun tag(macro: Boolean) {
             val tag = b.mark()
             b.advanceLexer() // {%
+            val keyword = b.tokenText
             if (b.tokenType == DbtTypes.KEYWORD || b.tokenType == DbtTypes.IDENTIFIER) b.advanceLexer()
             else b.error("Expected a Jinja statement")
             if (macro) {
@@ -108,7 +109,26 @@ class DbtParser : PsiParser {
                     if (!eat(DbtTypes.RPAREN)) b.error("Expected ')'")
                 } else b.error("Expected macro parameters")
             }
-            // Headers retain their tokens and delimiter structure. Statement-specific semantics are deferred.
+            when (keyword) {
+                "set" -> {
+                    name(DbtTypes.BINDING_NAME)
+                    // Namespace attribute assignment binds the namespace, not the attribute's name.
+                    while (eat(DbtTypes.DOT)) {
+                        if (isName()) b.advanceLexer() else b.error("Expected a name")
+                    }
+                    while (eat(DbtTypes.COMMA)) name(DbtTypes.BINDING_NAME)
+                    if (b.tokenText == "=") { b.advanceLexer(); expression(0, 0) }
+                }
+                "for" -> {
+                    name(DbtTypes.BINDING_NAME)
+                    while (eat(DbtTypes.COMMA)) name(DbtTypes.BINDING_NAME)
+                    if (b.tokenText == "in") { b.advanceLexer(); expression(0, 0) }
+                    else b.error("Expected 'in'")
+                    if (b.tokenText == "if") { b.advanceLexer(); expression(0, 0) }
+                }
+                "if", "elif", "do" -> expression(0, 0)
+            }
+            // Retain unsupported header syntax and recover without losing subsequent tags.
             val brackets = ArrayDeque<IElementType>()
             while (!b.eof() && !boundary()) {
                 val type = b.tokenType
@@ -244,9 +264,7 @@ class DbtParser : PsiParser {
     }
 
     companion object {
-        private val CLOSING = mapOf("macro" to "endmacro", "if" to "endif", "for" to "endfor", "call" to "endcall",
-            "filter" to "endfilter", "block" to "endblock", "raw" to "endraw", "with" to "endwith",
-            "snapshot" to "endsnapshot", "test" to "endtest", "materialization" to "endmaterialization")
+        private val CLOSING = DbtBlocks.CLOSING.filterKeys { it != "set" }
         private val LITERALS = setOf("true", "false", "none", "True", "False", "None")
         private val PRECEDENCE = mapOf("or" to 10, "and" to 20, "is" to 30, "in" to 30, "not" to 30,
             "==" to 30, "!=" to 30, "<" to 30, ">" to 30, "<=" to 30, ">=" to 30, "~" to 40,

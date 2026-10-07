@@ -114,6 +114,60 @@ Offline IntelliJ Plugin Verifier **1.410** reports **Compatible** for this final
 merged-module/optional-dependency limitations noted above apply. The verifier uses its dedicated
 `offline` property, avoiding duplicate CLI flags when Gradle also runs with `--offline`.
 
+Version **0.1.4-dev** fixes navigation from set assignments, do statements, if/elif conditions and
+for iterables/conditions. Assignment/loop bindings have separate PSI so a package name appearing on
+the right-hand side no longer falsely shadows its macro references. Real local bindings and macro
+parameters remain conservatively excluded. SQL text numbers (integers, decimals and exponents) now
+have numeric highlighting; SQL identifiers, comments and strings remain separate tokens. The dbt
+file type supplies the registered SQL icon when available, otherwise a bundled SQL icon.
+
+The core registers a public `FoldingBuilderEx` implementing `DumbAware`, following the
+[JetBrains folding builder extension](https://plugins.jetbrains.com/docs/intellij/folding-builder.html).
+It folds complete macro/template bodies, elif/else bodies, multiline tags, calls and collections
+without semantic indexes. Actual editor folding-model tests check macro collapse/expand, exact body
+ranges, persistence across highlighting, caret movement, same-length document edits and reopening.
+An automatically activated `.sql` regression checks nested folds and project-tree icons alongside
+the same-file `elementary.agate_val_serialize` statement call, declaration navigation and Find Usages.
+Prefix edits now cover set, do, for and if/elif/else syntax as well as macro signatures.
+
+The final build passes **25 tests** on the exact **PY-262.10968.92** SDK with commercial/database
+modules disabled, **23 tests** on **IU-253.31033.145** with database tools and TextMate disabled, and
+**31 tests** with both enabled. Reports are saved under `build/reports/tests/014-*`. Plugin structure
+checks and ZIP packaging pass; all packaged classes use Java **21** bytecode (class version **65**).
+Offline Plugin Verifier **1.410** reports **Compatible** against both IDE builds with no reported
+forbidden API use. Its merged-module and optional-dependency limitations remain as described above.
+Git now tracks the source, tests and documentation; the working 0.1.3 baseline was committed before
+these changes. Generated caches and build outputs are ignored.
+
+Release candidate **dbt Lens 0.1.4** renames the plugin and build artifact while retaining the original
+`dev.dbt.jinja` plugin ID and internal language/file-type IDs for installation compatibility. The release
+ZIP is `build/distributions/dbt-lens-0.1.4.zip`. All **31 SQL-enabled tests**, plugin structure checks and
+packaging pass again after the rename. Offline binary verification reports **Compatible** against
+**IU-253.31033.145** and **PY-262.10968.92**, with the same qualification limits described above.
+The `0.1.4` pull request targets `0.1.3`. Earlier version PRs target their immediate predecessor,
+starting with `0.1.0` targeting the bootstrap-only `main`. Merging and Marketplace publication are separate steps.
+
+Version **0.1.5** adds Go to Declaration from every supported closing keyword to its matching opener.
+Nested enclosures are resolved through their parsed block, and malformed/mismatched closers do not
+navigate to unrelated openings. A `DumbAware` `GotoDeclarationHandler` provides structural navigation
+without adding closing tags to semantic macro usages. Tests invoke the IDE's actual declaration action,
+including automatically activated `.sql` files and unchanged macro Find Usages counts.
+
+Multiline Jinja comments (including whitespace control) and complete SQL block comments now fold.
+String contents, single-line comments and incomplete comment blocks do not produce comment folds.
+SQL comment folding shares the lexical fallback's existing limitation around Jinja holes.
+Blocks and elif/else branches with multiline headers have a primary fold starting at the end of
+their first line and extending through the body. Competing header/argument-only folds are suppressed
+inside structural headers; standalone expression/set-call folds remain available. Editor tests check
+that collapsing the first-line region actually hides the macro, loop or conditional body.
+
+The final 0.1.5 source passes **35 SQL-enabled tests**, **27 minimal-host tests**, and **29 tests** on
+the exact **PY-262.10968.92** SDK with commercial/database modules disabled. Reports are saved under
+`build/reports/tests/015-*`. Structure checks and `dbt-lens-0.1.5.zip` packaging pass; packaged classes
+retain Java **21** bytecode. Offline Plugin Verifier **1.410** reports **Compatible** against both
+**IU-253.31033.145** and **PY-262.10968.92**, with the same documented qualification limits.
+The `0.1.5` feature PR targets `0.1.4`.
+
 No interactive user-IDE UI qualification, PostgreSQL/Snowflake assistance qualification,
 IntelliJ 2026.1 compatibility run or performance benchmark has been performed. Parser fixtures are
 editing correctness checks, not runtime/dbt equivalence tests. The project-configuration checker

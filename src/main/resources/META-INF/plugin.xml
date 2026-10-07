@@ -1,9 +1,9 @@
 <idea-plugin>
     <id>dev.dbt.jinja</id>
-    <name>dbt Jinja</name>
-    <vendor>dbt Jinja contributors</vendor>
+    <name>dbt Lens</name>
+    <vendor>dbt Lens contributors</vendor>
     <description><![CDATA[
-        Early development build: Jinja parsing, highlighting, completion, and project macro navigation
+        Jinja parsing, highlighting, folding, completion, and project macro navigation
         in SQL templates. Native SQL integration is an experimental feasibility prototype.
     ]]></description>
     <depends>com.intellij.modules.platform</depends>
@@ -15,6 +15,8 @@
         <lang.parserDefinition language="dbt Jinja" implementationClass="dev.dbt.intellij.lang.DbtParserDefinition"/>
         <lang.syntaxHighlighterFactory language="dbt Jinja" implementationClass="dev.dbt.intellij.editor.DbtSyntaxHighlighterFactory"/>
         <lang.braceMatcher language="dbt Jinja" implementationClass="dev.dbt.intellij.editor.DbtBraceMatcher"/>
+        <lang.foldingBuilder language="dbt Jinja" implementationClass="dev.dbt.intellij.editor.DbtFoldingBuilder"/>
+        <gotoDeclarationHandler implementation="dev.dbt.intellij.editor.DbtEnclosureNavigationHandler"/>
         <lang.findUsagesProvider language="dbt Jinja" implementationClass="dev.dbt.intellij.editor.DbtFindUsagesProvider"/>
         <completion.contributor language="dbt Jinja" implementationClass="dev.dbt.intellij.editor.DbtCompletionContributor"/>
         <annotator language="dbt Jinja" implementationClass="dev.dbt.intellij.editor.DbtAnnotator"/>

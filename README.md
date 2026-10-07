@@ -1,4 +1,6 @@
-# dbt Jinja for JetBrains
+# dbt Lens
+
+SQL and Jinja editing for dbt projects in JetBrains IDEs.
 
 An early, installable editor prototype for the production-plugin design. This repository implements
 the first parsing/editor milestone and the mixed-language feasibility experiment. It is not the full
@@ -11,17 +13,24 @@ dbt project-intelligence release.
 - Expression PSI for names, strings, numbers, calls, keyword arguments, attributes, indexing,
   collections, arithmetic/comparison operators, filters and tests.
 - Error recovery at subsequent Jinja tags, missing block/delimiter diagnostics and brace matching.
-- Independent Jinja highlighting and basic SQL keyword/string/comment coloring in template text.
+- Independent Jinja highlighting and basic SQL keyword/string/comment/number coloring in template text.
+- Persistent folding for macro/block bodies, elif/else bodies, multiline tags, calls and collections.
+  Blocks with multiline headers collapse from their first line, including the body.
+- Folding for multiline Jinja comments and SQL block comments.
+- Go to Declaration on closing tags (such as `endmacro`, `endif`, `endfor` and `endset`) navigates to
+  the matching opener, including nested blocks. On macOS, use ⌘B or ⌘-click on the closing keyword.
+- SQL file icons, with a bundled SQL icon when the host does not supply one.
 - Automatic activation in ordinary `.sql` files inside a dbt project, including TextMate and plain-text
   hosts without Database Tools.
 - Function call/declaration coloring, completion for dbt context names, project macros and parameters.
 - Go to Declaration and Find Usages for static calls to top-level macros in the current dbt project,
   including qualified calls using its literal package name (for example `elementary.edr_type_timestamp()`).
+  Calls in set assignments, if/elif conditions, for iterables/conditions and do statements are included.
   Duplicate declarations return multiple candidates. Filters, parameter-shadowed names and discoverable
   statement bindings are excluded. Other package namespaces and dynamic dispatch are still deferred.
 
-Statements other than macro declarations currently retain a balanced token structure; they do not
-have complete statement-specific grammar or lexical-scope semantics. This is a Jinja editing subset,
+Macro signatures and supported statement operands have expression PSI. Other statement headers retain
+a balanced token structure; full statement grammar and lexical-scope semantics remain incomplete. This is a Jinja editing subset,
 not runtime equivalence. Conditional expressions, call argument unpacking, slice syntax and extension
 semantics still need coverage. SQL coloring is lexical, without dialect-specific assistance; SQL strings
 and comments crossing a Jinja hole are not yet context-aware.
@@ -39,8 +48,11 @@ roots keep their normal SQL editing behavior. Custom output-directory configurat
 The plugin also associates `*.dbt.sql`, `*.jinja` and `*.j2`. Open
 [examples/local-macros.dbt.sql](examples/local-macros.dbt.sql) to try completion, navigation and usages.
 For a file without a detected dbt root, use **Override File Type** and
-choose **dbt Jinja**. After updating to 0.1.3-dev, restart the IDE and reopen the model to refresh its
+choose **dbt Jinja**. After updating to dbt Lens 0.1.5, restart the IDE and reopen the model to refresh its
 existing language selection.
+
+The plugin keeps its original `dev.dbt.jinja` ID so dbt Lens upgrades existing installations.
+Its internal language and file-type name remains **dbt Jinja**.
 
 ## Build and test
 
@@ -57,11 +69,11 @@ For binary compatibility and API checks against the same SDK, run `./gradlew ver
 Use `-PverifierOffline=true` to restrict the verifier to already downloaded dependencies; the validation
 record describes the limits of the offline result.
 
-The installation ZIP appears in `build/distributions/`. Use **Settings → Plugins → Install Plugin
+The installation ZIP appears at `build/distributions/dbt-lens-0.1.5.zip`. Use **Settings → Plugins → Install Plugin
 from Disk** to install it in a compatible IDE, or `./gradlew runIde` to start a separate development IDE.
 The compatibility range in the descriptor is builds 253–262, including PyCharm 2026.2. Only versions
 actually exercised in [docs/feasibility.md](docs/feasibility.md) are validated; this development build is
-not published.
+not published to the JetBrains Marketplace.
 
 To use an installed SDK and runtime, supply paths explicitly (on macOS, SDK paths end in `Contents`):
 
@@ -113,3 +125,16 @@ Rename is explicitly rejected until the project-wide reference model exists. No 
 is executed to provide editor features.
 
 See [docs/feasibility.md](docs/feasibility.md) for the integration gate and the next milestones.
+
+## Version review workflow
+
+`main` initially contains repository basics. The implementation is reviewed as stacked PRs:
+`0.1.0` → `main`, `0.1.1` → `0.1.0`, `0.1.2` → `0.1.1`, `0.1.3` → `0.1.2`, `0.1.4` → `0.1.3`,
+and `0.1.5` → `0.1.4`.
+Review each PR against its immediate predecessor. Earlier development versions retain their original
+names and compatibility ranges; dbt Lens branding is introduced in 0.1.4.
+
+Versions 0.1.0–0.1.3 were recovered from the original editing history because Git was initialized at
+0.1.3. The recovered 0.1.3 tree matches the original Git baseline, and rebuilt historical classes
+are checked against the retained development packages. These are reconstructed commits, not the
+original timestamps of development. The previous Git history is preserved on `archive/pre-stack`.
