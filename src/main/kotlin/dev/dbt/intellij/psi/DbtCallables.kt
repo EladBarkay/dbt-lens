@@ -26,5 +26,5 @@ object DbtCallables {
         "items", "join", "last", "length", "list", "lower", "map", "max", "min", "pprint", "random", "reject",
         "rejectattr", "replace", "reverse", "round", "safe", "select", "selectattr", "slice", "sort", "string",
         "striptags", "sum", "title", "tojson", "trim", "truncate", "unique", "upper", "urlencode", "urlize",
-        "wordcount", "wordwrap", "xmlattr", "as_bool", "as_native", "as_number", "as_text")
+        "wordcount", "wordwrap", "xmlattr", "as_bool", "as_native", "as_number", "as_text", "is_list")
 }

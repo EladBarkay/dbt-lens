@@ -13,10 +13,11 @@ data class ResourceCall(val function: String, val name: String, val packageName:
             if (call.node.elementType != T.CALL || call.node.lastChildNode?.elementType != T.RPAREN) return null
             val callee = call.firstChild as? DbtVariable ?: return null
             val function = callee.text.takeIf { it in setOf("ref", "source", "metric") } ?: return null
-            if (LocalVariables.declaration(callee) != null) return null
+            if (LocalVariables.candidates(callee).isNotEmpty() || callee.reference?.resolve() is dev.dbt.intellij.psi.DbtMacro) return null
             val positional = mutableListOf<String>()
             val keyword = linkedMapOf<String, String>()
             for (arg in call.children.filter { it.node.elementType == T.ARGUMENT }) {
+                if (arg.node.getChildren(null).any { it.text in setOf("*", "**") }) return null
                 val key = arg.node.findChildByType(T.ARGUMENT_NAME)?.text
                 val value = arg.children.lastOrNull { it.node.elementType != T.ARGUMENT_NAME } ?: return null
                 if (value.node.elementType != T.VALUE || value.children.isNotEmpty()) return null

@@ -72,11 +72,14 @@ class DbtParser : PsiParser {
 
         private fun headerHasAssignment(): Boolean {
             var look = 1
+            var nesting = 0
             while (true) {
                 val type = b.lookAhead(look) ?: return false
                 if (type == DbtTypes.STMT_CLOSE || type in setOf(DbtTypes.EXPR_OPEN, DbtTypes.STMT_OPEN)) return false
                 // Assignment is always a single '=' token; comparisons use separate token text.
-                if (type == DbtTypes.OPERATOR) {
+                if (type in setOf(DbtTypes.LPAREN, DbtTypes.LBRACKET, DbtTypes.LBRACE)) nesting++
+                if (type in setOf(DbtTypes.RPAREN, DbtTypes.RBRACKET, DbtTypes.RBRACE)) nesting--
+                if (type == DbtTypes.OPERATOR && nesting == 0) {
                     var raw = 1; var significant = 0
                     while (significant < look) {
                         if (b.rawLookup(raw) != com.intellij.psi.TokenType.WHITE_SPACE) significant++
@@ -96,7 +99,7 @@ class DbtParser : PsiParser {
             val keyword = b.tokenText
             if (b.tokenType == DbtTypes.KEYWORD || b.tokenType == DbtTypes.IDENTIFIER) b.advanceLexer()
             else b.error("Expected a Jinja statement")
-            if (macro) {
+            if (macro || keyword == "test") {
                 name(DbtTypes.DECLARATION_NAME)
                 if (eat(DbtTypes.LPAREN)) {
                     while (!b.eof() && !boundary() && !isType(DbtTypes.RPAREN)) {
@@ -118,6 +121,9 @@ class DbtParser : PsiParser {
                     }
                     while (eat(DbtTypes.COMMA)) name(DbtTypes.BINDING_NAME)
                     if (b.tokenText == "=") { b.advanceLexer(); expression(0, 0) }
+                    else if (b.tokenText == "|") {
+                        while (b.tokenText == "|") { b.advanceLexer(); expression(81, 0) }
+                    }
                 }
                 "for" -> {
                     name(DbtTypes.BINDING_NAME)
@@ -126,6 +132,24 @@ class DbtParser : PsiParser {
                     else b.error("Expected 'in'")
                     if (b.tokenText == "if") { b.advanceLexer(); expression(0, 0) }
                 }
+                "with" -> {
+                    while (!b.eof() && !boundary()) {
+                        name(DbtTypes.BINDING_NAME)
+                        if (b.tokenText == "=") { b.advanceLexer(); expression(0, 0) } else b.error("Expected '='")
+                        if (!eat(DbtTypes.COMMA)) break
+                    }
+                }
+                "call" -> {
+                    if (eat(DbtTypes.LPAREN)) {
+                        while (!b.eof() && !boundary() && !isType(DbtTypes.RPAREN)) {
+                            name(DbtTypes.PARAMETER_NAME)
+                            if (!eat(DbtTypes.COMMA)) break
+                        }
+                        if (!eat(DbtTypes.RPAREN)) b.error("Expected ')'")
+                    }
+                    expression(0, 0)
+                }
+                "filter" -> expression(0, 0)
                 "if", "elif", "do" -> expression(0, 0)
             }
             // Retain unsupported header syntax and recover without losing subsequent tags.
@@ -225,6 +249,7 @@ class DbtParser : PsiParser {
                                 if (isName() && b.lookAhead(1) == DbtTypes.OPERATOR && tokenAfterIdentifierIsEquals()) {
                                     name(DbtTypes.ARGUMENT_NAME); b.advanceLexer()
                                 }
+                                if (b.tokenText in setOf("*", "**")) b.advanceLexer()
                                 expression(0, depth + 1); argument.done(DbtTypes.ARGUMENT)
                                 if (!eat(DbtTypes.COMMA)) break
                                 if (b.currentOffset == offset) break
@@ -236,8 +261,12 @@ class DbtParser : PsiParser {
                             b.advanceLexer(); name(DbtTypes.VARIABLE); outer.done(DbtTypes.ACCESS)
                         }
                         else -> {
-                            b.advanceLexer(); expression(0, depth + 1)
-                            if (eat(DbtTypes.COLON) && !isType(DbtTypes.RBRACKET)) expression(0, depth + 1)
+                            b.advanceLexer()
+                            if (!isType(DbtTypes.COLON)) expression(0, depth + 1)
+                            if (eat(DbtTypes.COLON)) {
+                                if (!isType(DbtTypes.COLON) && !isType(DbtTypes.RBRACKET)) expression(0, depth + 1)
+                                if (eat(DbtTypes.COLON) && !isType(DbtTypes.RBRACKET)) expression(0, depth + 1)
+                            }
                             if (!eat(DbtTypes.RBRACKET)) b.error("Expected ']'")
                             outer.done(DbtTypes.ACCESS)
                         }
@@ -264,7 +293,12 @@ class DbtParser : PsiParser {
                 val outer = left.precede(); b.advanceLexer()
                 if ((operator == "is" || operator == "in") && b.tokenText == "not") b.advanceLexer()
                 if (operator == "not" && b.tokenText == "in") b.advanceLexer()
-                expression(if (operator == "**") precedence else precedence + 1, depth + 1)
+                val right = expression(precedence + 1, depth + 1)
+                if (operator == "is" && right != null && (b.tokenType in setOf(DbtTypes.IDENTIFIER, DbtTypes.STRING, DbtTypes.NUMBER) || b.tokenText in LITERALS)) {
+                    val testCall = right.precede()
+                    val argument = b.mark(); expression(precedence + 1, depth + 1); argument.done(DbtTypes.ARGUMENT)
+                    testCall.done(DbtTypes.CALL)
+                }
                 outer.done(DbtTypes.BINARY); left = outer
             }
             return left
