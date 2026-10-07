@@ -168,6 +168,94 @@ retain Java **21** bytecode. Offline Plugin Verifier **1.410** reports **Compati
 **IU-253.31033.145** and **PY-262.10968.92**, with the same documented qualification limits.
 The `0.1.5` feature PR targets `0.1.4`.
 
+Version **0.1.6** fixes the folded display of multiline structural headers: the placeholder closes
+any brackets opened on the first line and displays the actual `%}`/`-%}` delimiter before the collapsed
+body. An editor test asserts the resulting visible macro signature. Inline conditional expressions now
+have their own PSI, right-associative alternatives and optional else; filtered for-loop headers retain
+their separate condition. The user's multiline set/conditional example parses without error elements,
+and prefix-edit fixtures retain every source character.
+
+Static qualified/unqualified calls now navigate to installed dependencies in `dbt_packages` or a literal
+`packages-install-path`. Package namespaces come from each `dbt_project.yml`. Current-project macros
+win unqualified lookups; ambiguity remains explicit. Excluded installed packages use a cached token
+catalog with cancellation checks, rather than relying on IDE content indexes. The fallback reads
+SQL/Jinja files up to 2 MB and opens PSI for matching declarations only. Nested unrelated dbt roots,
+generated folders and virtual environments are excluded. Unsaved committed macro edits invalidate the
+catalog. Tests cover an excluded custom install folder, completion, opening dependency SQL files,
+namespace shadowing and unchanged filter/test namespaces. Performance benchmarking and dynamic
+adapter dispatch remain deferred.
+
+Simple macro parameters, preceding set bindings and enclosing for bindings now provide variable
+references. Namespace attribute assignment does not invent a new root binding. Local bindings take
+priority over macro resolution; loop names do not leak into following statements. This remains a
+conservative lexical subset, not a full runtime scope model. Variable/parameter, call/declaration and
+dbt-global color categories are exposed through a native Color Scheme page. Macro hover/Quick
+Documentation uses the first Jinja or SQL comment below the header, escaping HTML and showing a static
+signature. It shares macro references, including dependencies, and executes no project code.
+
+An optional JSON descriptor registers JetBrains' public schema-provider extension. YAML retains its
+native parser. Project/profile/package/dependency/selector files and property YAML in configured
+resource folders receive schemas and a dbt marker icon. Property-path overrides currently support
+literal inline YAML lists. The standard user profiles file is supported when a dbt project is an IDE
+content root. Five official dbt Labs schemas are bundled at revision
+`6a401244651d3b5e0fd2f7cfcfb120187118edb4`, with their Apache-2.0 license and no external references.
+A permissive profiles schema validates common structure while allowing adapter fields and Jinja
+string scalars. Native YAML completion and schema inspections are exercised in tests, alongside
+non-dbt/unrelated/generated-file exclusion and marker deletion.
+
+The project setting **Keep the native SQL editor in dbt projects** leaves ordinary native SQL files
+to JetBrains' dialect selection and parser. Jinja features are disabled in those files in that mode;
+explicit template associations retain Jinja editing. The default remains lexical SQL coloring. The
+experimental two-root parser remains opt-in PostgreSQL, with the same failed relation-hole gate;
+no simultaneous production SQL/Jinja integration or dialect fidelity is claimed.
+
+The 0.1.6 build passes **45 SQL-enabled tests**, **33 minimal-host tests** with Database Tools,
+TextMate, JSON and YAML disabled, and **38 tests** on **PY-262.10968.92** with commercial/database
+modules disabled and native JSON/YAML enabled. Reports are saved under `build/reports/tests/016-*`.
+Plugin structure and project-configuration checks and packaging pass; the checker retains its existing
+bounded-until-build warning. `dbt-lens-0.1.6.zip` uses Java **21** bytecode. Offline Plugin Verifier
+**1.410** reports **Compatible** against both **IU-253.31033.145** and **PY-262.10968.92**, with no
+reported forbidden API use and the same merged-module/optional-dependency qualification limits.
+The feature PR targets `0.1.5`.
+
+Version **0.1.7** keeps the complete macro signature visible and folds only the body. Other multiline
+structural headers retain their existing first-line controls. Documentation now uses the adjacent
+comment **above** a declaration, superseding 0.1.6's below-header convention. Tests reject comment-like
+strings and body comments as docs. The palette defaults to ordinary identifier colors for variables
+and calls, declaration blue, muted red keyword labels, and subdued violet globals. Unknown identifiers
+are not assigned a variable category; filters with or without parentheses are callable usages.
+
+Static macro references also cover callbacks passed as values. Unknown filter names may navigate to
+matching macros, but this does not establish registration in Jinja's separate filter registry. Built-in
+filters and tests stay separate from same-named macros, and normal lexical bindings retain precedence.
+The supplied Streamline dbt SVG replaces the provisional mark; dbt SQL uses a small code badge and
+configuration/property YAML uses the original mark. The icon provider leaves unrelated SQL alone.
+
+Literal `ref` calls navigate to SQL/Python models, CSV seeds and SQL snapshot declarations. An optional
+native-YAML bridge supplies source-table, snapshot, metric and model-version definitions, with offsets
+from native YAML PSI. Versioned model navigation honors integer/quoted `v`/`version`, `latest_version` and
+`defined_in`, using YAML as a fallback when a model file cannot be selected. Default latest-version
+inference is limited to integer identifiers; other schemes require explicit `latest_version`. Unqualified resources
+prefer the current dbt project; package-qualified refs and installed dependencies share the macro
+resolver's package roots. Duplicate candidates are retained, dynamic/shadowed/incomplete calls remain
+unknown, and arbitrary nested projects are excluded. Exposure dependency links are supported in native
+YAML, including YAML quote escaping; exposures themselves are not ref targets. Full-expression parsing
+prevents call-looking strings or Jinja comments from becoming resource links.
+
+Resource folders support literal inline and block YAML path lists. A cancellable cached catalog reads
+configured folders, excludes generated/environment folders and nested projects, and invalidates on
+committed PSI edits and VFS changes. YAML and SQL snapshot reads are capped at 2 MB; model files and
+CSV seeds need only names. This is source-based static discovery without manifest or dbt execution,
+not complete config/runtime semantics. Resource completion, rename and resource Find Usages remain
+out of scope. YAML metadata classes load only through the optional YAML descriptor.
+
+The 0.1.7 test matrix passes **52 SQL-enabled tests**, **38 minimal-host tests** with SQL, TextMate,
+JSON and YAML disabled, and **45 tests** on **PY-262.10968.92** with commercial/database modules disabled.
+Reports are saved under `build/reports/tests/017-*`. Configuration/structure checks and packaging pass;
+`dbt-lens-0.1.7.zip` retains Java **21** bytecode. Offline Plugin Verifier **1.410** reports **Compatible**
+against both **IU-253.31033.145** and **PY-262.10968.92**, with the same documented qualification limits.
+The feature PR targets `0.1.6`.
+
 No interactive user-IDE UI qualification, PostgreSQL/Snowflake assistance qualification,
 IntelliJ 2026.1 compatibility run or performance benchmark has been performed. Parser fixtures are
 editing correctness checks, not runtime/dbt equivalence tests. The project-configuration checker
@@ -189,10 +277,10 @@ remain release-qualification items.
    consider optional execution and compiled previews.
 
 Project macro lookup uses a content-dependent `ScalarIndexExtension<String>` over SQL/Jinja template
-tokens. It opens PSI only for files containing the requested macro name, scopes results to the nearest
-dbt root, and excludes nested projects/default generated directories. Same-file unqualified macros take
-precedence. Qualified calls resolve only through the current project's literal identifier `name:` scalar;
-complex YAML expressions and dependency-package namespaces are not evaluated. Resolution suppresses a
-name if any supported statement header binds it, intentionally under-resolving scopes that are not yet
-understood. Index-backed completion and resolution pause during indexing. Performance qualification,
-full lexical scopes, configured macro paths and dependency packages remain future milestones.
+tokens. Current-project lookups open PSI for indexed files containing the requested macro name and
+scope results to the nearest dbt root. Installed dependencies use their own roots and, when necessary,
+the cached fallback catalog described above. Same-file unqualified declarations take precedence.
+Literal package names and install paths are supported; complex YAML/Jinja expressions are not evaluated.
+Discoverable bindings conservatively suppress macro resolution. Completion/resolution pause while the
+IDE indexes. Full lexical scopes, configured macro-path filtering, runtime dispatch and performance
+qualification remain future milestones.

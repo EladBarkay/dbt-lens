@@ -129,7 +129,7 @@ class DbtProjectEditorTest : BasePlatformTestCase() {
         // Explicit local bindings still shadow package names, including in statement calls.
         val shadowed = open("warehouse/macros/shadowed.sql",
             "{% macro other(elementary) %}{% do elementary.agate_val_serialize(1) %}{% endmacro %}")
-        assertEmpty(PsiTreeUtil.findChildrenOfType(shadowed, DbtVariable::class.java).mapNotNull { it.reference?.resolve() })
+        assertEmpty(PsiTreeUtil.findChildrenOfType(shadowed, DbtVariable::class.java).filter { it.text == "agate_val_serialize" }.mapNotNull { it.reference?.resolve() })
     }
     fun testProjectCompletionAndNamespaceCompletion() = withSqlType(PlainTextFileType.INSTANCE) {
         root()
@@ -147,7 +147,7 @@ class DbtProjectEditorTest : BasePlatformTestCase() {
         myFixture.addFileToProject("warehouse/integration/macros/hidden.sql", "{% macro hidden() %}{% endmacro %}")
         myFixture.addFileToProject("warehouse/macros/types.sql", "{% macro edr_type_timestamp() %}{% endmacro %}")
         val file = open("warehouse/macros/cast_column.sql", "{% macro cast_column(elementary) %}{{ elementary.edr_type_timestamp() }}{% endmacro %}{{ hidden() }} {{ adapter.dispatch('edr_type_timestamp', 'elementary')() }}")
-        assertEmpty(PsiTreeUtil.findChildrenOfType(file, DbtVariable::class.java).mapNotNull { it.reference?.resolve() })
+        assertEmpty(PsiTreeUtil.findChildrenOfType(file, DbtVariable::class.java).filter { it.text in setOf("edr_type_timestamp", "hidden", "dispatch") }.mapNotNull { it.reference?.resolve() })
     }
     fun testDuplicateProjectMacrosStayAmbiguousAndRawTextIsNotIndexedAsAMacro() = withSqlType(PlainTextFileType.INSTANCE) {
         root()

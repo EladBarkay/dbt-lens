@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.1 — Project and YAML navigation
+
+Consolidates original PRs #8–#9.
+
+Installed package navigation, macro documentation, YAML schemas and icons, and static ref/source/version navigation.
+
 ## 0.2.0 — Editor foundations
 
 Consolidates the original 0.1.0–0.1.5 development stack (PRs #2–#7).

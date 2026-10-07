@@ -26,28 +26,27 @@ class DbtMacro(node: ASTNode) : ASTWrapperPsiElement(node), PsiNameIdentifierOwn
 
 class DbtVariable(node: ASTNode) : ASTWrapperPsiElement(node) {
     override fun getReference(): PsiReference? {
-        val access = parent.takeIf { it?.node?.elementType == DbtTypes.ACCESS && it.lastChild == this }
+        val access = DbtCallables.memberAccess(this)
+        val use = DbtCallables.use(this)
+        if (use == DbtCallables.Use.TEST) return null
         val namespace = access?.firstChild?.takeIf { it is DbtVariable }?.text
-        if (access != null && (access.children.size != 2 || access.node.findChildByType(DbtTypes.DOT) == null ||
-            namespace == null || namespace != ProjectMacros.namespace(this))) return null
-        val target: PsiElement = access ?: this
-        if (target.parent?.node?.elementType != DbtTypes.CALL || target.parent.firstChild != target) return null
-        var callee: PsiElement = target.parent
-        while (callee.parent?.node?.elementType in setOf(DbtTypes.CALL, DbtTypes.ACCESS) && callee.parent.firstChild == callee) {
-            callee = callee.parent
-        }
-        val binary = callee.parent
-        if (binary?.node?.elementType == DbtTypes.BINARY && binary.firstChild != callee &&
-            binary.node.getChildren(null).any { it.text in setOf("|", "is") }) return null
-        return LocalMacroReference(this, namespace)
+        val filter = use == DbtCallables.Use.FILTER
+        if (filter && namespace == null && text in DbtCallables.BUILTIN_FILTERS) return null
+        if (access == null && !filter && LocalVariables.declaration(this) != null) return LocalVariableReference(this)
+        if (access != null && (access.children.size != 2 || namespace == null || !ProjectMacros.hasNamespace(this, namespace))) return null
+        // The base of a qualified access is a namespace/object, not the referenced member.
+        if (access == null && parent.node.elementType == DbtTypes.ACCESS && parent.firstChild == this) return null
+        if (use == DbtCallables.Use.VALUE &&
+            LocalMacros.candidates(containingFile, text).isEmpty() && ProjectMacros.candidates(this, text, namespace).isEmpty()) return null
+        return LocalMacroReference(this, namespace, filter)
     }
 }
 
-class LocalMacroReference(element: DbtVariable, private val namespace: String? = null) : PsiPolyVariantReferenceBase<DbtVariable>(element, TextRange(0, element.textLength), true) {
+class LocalMacroReference(element: DbtVariable, private val namespace: String? = null, private val filter: Boolean = false) : PsiPolyVariantReferenceBase<DbtVariable>(element, TextRange(0, element.textLength), true) {
     override fun multiResolve(incompleteCode: Boolean): Array<ResolveResult> {
-        if (LocalMacros.isShadowed(element, namespace ?: element.text)) return emptyArray()
+        if ((!filter || namespace != null) && LocalMacros.isShadowed(element, namespace ?: element.text)) return emptyArray()
         val local = if (namespace == null) LocalMacros.candidates(element.containingFile, element.text) else emptyList()
-        val candidates = if (local.isNotEmpty()) local else ProjectMacros.candidates(element, element.text)
+        val candidates = if (local.isNotEmpty()) local else ProjectMacros.candidates(element, element.text, namespace)
         return candidates
         .map { PsiElementResolveResult(it) }.toTypedArray()
     }
