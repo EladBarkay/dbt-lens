@@ -19,7 +19,7 @@ object DbtBlockTemplates {
         }
         context.commitDocument()
         val leaf = context.file.findElementAt(context.startOffset)
-        val header = generateSequence(leaf) { it.parent }.firstOrNull { it.node.elementType == T.STATEMENT }
+        val header = generateSequence(leaf) { if (it is com.intellij.psi.PsiFile) null else it.parent }.firstOrNull { it.node?.elementType == T.STATEMENT }
         if (header != null && DbtBlocks.closingFor(header.node) != null) return
         val offset = context.tailOffset
         val rest = context.document.charsSequence.substring(offset)

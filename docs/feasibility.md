@@ -290,6 +290,29 @@ Reports are saved under `build/reports/tests/018-*`. Configuration and structure
 **Compatible** against both **IU-253.31033.145** and **PY-262.10968.92**, with the same merged-module and
 optional-dependency qualification limits. The feature PR targets `0.1.7`.
 
+Version **0.1.9** fixes the reported null-AST exception in the Enter handler. Physical template files
+have directory parents with no AST; prior light-file fixtures did not expose that path. Enter,
+keyword-argument completion and block templates now stop ancestor traversal at the file and tolerate
+missing nodes. Physical-file regressions exercise SQL text, comments, raw blocks, empty files,
+expression completion and the existing EOF macro closer behavior.
+
+Literal `adapter.dispatch` calls now expose all discovered adapter/default implementations through
+Go to Declaration on the callee or macro-name string. Package order follows the host project's literal
+search order through an optional native-YAML bridge; dependency-local overrides are ignored. Defaults
+appear first within each package. Navigation does not infer an active adapter or its inheritance.
+Adapter-specific declarations navigate to their same-package default, offering visible dependency
+defaults when no own default exists. Find Usages adds matching dispatch strings to ordinary direct
+calls through public indexed reference search. These are possible SQL/Jinja call sites, not claims
+about runtime selection. Dynamic/shadowed/malformed calls remain unresolved. Root configuration and
+excluded/custom installed dependencies use the existing project-root and cached catalog boundaries.
+
+The 0.1.9 matrix passes **86 SQL-enabled tests**, **68 minimal-host tests**, and **79 tests** on the
+exact **PY-262.10968.92** SDK with commercial/database modules disabled. Reports are saved under
+`build/reports/tests/019-*`. Project-configuration and structure checks and ZIP packaging pass;
+`dbt-lens-0.1.9.zip` retains Java **21** bytecode (class version **65**). Offline Plugin Verifier
+**1.410** reports **Compatible** against both **IU-253.31033.145** and **PY-262.10968.92**, with the
+same merged-module and optional-dependency qualification limits. The feature PR targets `0.1.8`.
+
 No interactive user-IDE UI qualification, PostgreSQL/Snowflake assistance qualification,
 IntelliJ 2026.1 compatibility run or performance benchmark has been performed. Parser fixtures are
 editing correctness checks, not runtime/dbt equivalence tests. The project-configuration checker
