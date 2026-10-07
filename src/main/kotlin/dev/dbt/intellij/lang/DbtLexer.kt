@@ -32,13 +32,13 @@ class DbtLexer : LexerBase() {
     private fun tagWord(offset: Int): String? {
         if (!at(offset, "{%")) return null
         var p = offset + 2
-        if (p < limit && source[p] == '-') p++
+        if (p < limit && source[p] in "-+") p++
         while (p < limit && source[p].isWhitespace()) p++
         val first = p
         while (p < limit && source[p].isLetter()) p++
         val word = source.subSequence(first, p).toString()
         while (p < limit && source[p].isWhitespace()) p++
-        if (p < limit && source[p] == '-') p++
+        if (p < limit && source[p] in "-+") p++
         return if (at(p, "%}")) word else null
     }
 
@@ -61,7 +61,7 @@ class DbtLexer : LexerBase() {
             type = if (expression) DbtTypes.EXPR_OPEN else DbtTypes.STMT_OPEN
             followingState = if (expression) EXPR else if (tagWord(start) == "raw") RAW_HEADER else STMT
             end = start + 2
-            if (end < limit && source[end] == '-') end++
+            if (end < limit && (source[end] == '-' || (!expression && source[end] == '+'))) end++
             return
         }
         if (state == OUTSIDE || state == RAW) {
@@ -70,7 +70,7 @@ class DbtLexer : LexerBase() {
             type = DbtTypes.TEXT; followingState = OUTSIDE; return
         }
         val close = if (state == EXPR) "}}" else "%}"
-        val closeStart = if (source[start] == '-') start + 1 else start
+        val closeStart = if (source[start] == '-' || (state != EXPR && source[start] == '+')) start + 1 else start
         if (at(closeStart, close)) {
             end = closeStart + 2
             type = if (state == EXPR) DbtTypes.EXPR_CLOSE else DbtTypes.STMT_CLOSE
@@ -96,17 +96,17 @@ class DbtLexer : LexerBase() {
                 if (source.subSequence(start, end).toString() in KEYWORDS) DbtTypes.KEYWORD else DbtTypes.IDENTIFIER
             }
             c.isDigit() -> {
-                while (end < limit && source[end].isDigit()) end++
+                while (end < limit && (source[end].isDigit() || (source[end] == '_' && end + 1 < limit && source[end + 1].isDigit()))) end++
                 if (end + 1 < limit && source[end] == '.' && source[end + 1].isDigit()) {
                     end++
-                    while (end < limit && source[end].isDigit()) end++
+                    while (end < limit && (source[end].isDigit() || (source[end] == '_' && end + 1 < limit && source[end + 1].isDigit()))) end++
                 }
                 if (end < limit && source[end] in "eE") {
                     var exponent = end + 1
                     if (exponent < limit && source[exponent] in "+-") exponent++
                     if (exponent < limit && source[exponent].isDigit()) {
                         end = exponent + 1
-                        while (end < limit && source[end].isDigit()) end++
+                        while (end < limit && (source[end].isDigit() || (source[end] == '_' && end + 1 < limit && source[end + 1].isDigit()))) end++
                     }
                 }
                 DbtTypes.NUMBER
@@ -130,7 +130,7 @@ class DbtLexer : LexerBase() {
             "and", "or", "is", "set", "endset", "call", "endcall", "filter", "endfilter", "block", "endblock",
             "raw", "endraw", "with", "endwith", "do", "import", "from", "as", "include", "extends",
             "true", "false", "none", "True", "False", "None", "recursive", "snapshot", "endsnapshot",
-            "test", "endtest", "materialization", "endmaterialization")
+            "test", "endtest", "materialization", "endmaterialization", "docs", "enddocs", "break", "continue")
         private val DOUBLE_OPERATORS = setOf("==", "!=", "<=", ">=", "//", "**")
     }
 }
