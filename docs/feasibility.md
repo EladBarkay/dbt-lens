@@ -377,6 +377,52 @@ subject to the existing merged-module/optional-dependency limits. It reports **2
 usages**, including the public native HTML pane APIs, and **4/6 deprecated usages** respectively.
 The feature PR targets `0.1.10`. No CLI generation or compilation behavior changes in this version.
 
+Version **0.1.12** adds explicit local dbt CLI integration. Project settings select a dbt executable,
+profiles directory/profile/target and optional literal environment file. The runner prefers the project's
+`.venv`/`venv`, then PATH, inherits the IDE environment, and passes arguments directly without a shell.
+Only the environment-file path is persisted. File contents are not copied into settings; dbt's own log
+messages can still include values printed by macros. Remote execution, shell activation and interactive
+prompts are not supported. Commands save pending documents within the selected dbt root before execution.
+
+**Generate manifest** delegates to `dbt parse`; **Compile current/project** delegate to `dbt compile`.
+The macro call dialog accepts an explicit invocation and arguments for `dbt compile --inline`, and shows
+its compiled event output separately from saved macro definitions. Known models containing local macro
+declarations still compile as models. Saved resource selection uses package/type/FQN provenance, with
+an exact file-name fallback, so dependency-only paths do not rely on dbt's host-root path glob.
+Compile can run introspective queries through dbt; no dbt command is started by indexing, hovering or
+opening files. Catalog generation, dependency installation, run-operation, model execution and live
+query results remain deferred.
+
+A project service runs at most one command, with native background progress, process cancellation,
+bounded readable logs and project-disposal cleanup. Success requires a zero exit, matching resources
+and a newly written supported manifest. Artifact metadata/SQL refresh automatically, including when a
+panel opens after completion. Inline results are associated with the originating macro/file; another
+resource never receives that result. Generated-file fallback requires manifest compilation provenance;
+parse or a partial compile cannot silently display older files left on disk for uncompiled resources. Both literal output paths and physical ancestors are checked to
+keep generated output within the selected project.
+
+The CLI fixture suite covers argument vectors, executable resolution, literal environments, missing
+manifest generation, selected compile/inline output, unsaved edits, model/macro routing, versioned
+resource selectors, delayed panel refresh, process failure, zero-exit/no-output failure, cancellation
+and restart, malformed environment errors and bounded chunked JSON logs. The process fixtures use
+`/usr/bin/python3` as a fake dbt executable; no dbt installation is needed for those IDE tests.
+Tests run under macOS on the two SDKs; Windows process behavior is not qualified.
+
+A separate isolated **dbt Core 1.10.6 / dbt-duckdb 1.10.1** smoke check uses the same CLI arguments.
+Parse, selected-model compile, project compile, dependency-model compile and inline macro compile pass.
+The macro executes `run_query('select 7 as id')` against the temporary local DuckDB database before
+emitting SQL. This verifies dbt's query-dependent compilation path, without connecting to user warehouse
+profiles. Results/logs are saved under `build/reports/cli/0112`. External warehouse adapters and Fusion
+are not qualified by this check.
+
+The final matrix passes **116 SQL-enabled tests**, **98 minimal-host tests**, and **109 tests** on the
+exact **PY-262.10968.92** SDK with commercial/database modules disabled. Reports are saved under
+`build/reports/tests/0112-*`. Packaging/structure checks pass and the settings search index is regenerated.
+The final ZIP keeps Java **21** bytecode (class version **65**) and the builds 253–262 descriptor range.
+Plugin Verifier **1.410** reports **Compatible** for **IU-253.31033.145** and **PY-262.10968.92**, with the
+existing merged-module/optional-dependency limits, **23 experimental** API usages and **4/6 deprecated**
+usages respectively. The feature PR targets `0.1.11`.
+
 No interactive user-IDE UI qualification, PostgreSQL/Snowflake assistance qualification,
 IntelliJ 2026.1 compatibility run or performance benchmark has been performed. Parser fixtures are
 editing correctness checks, not runtime/dbt equivalence tests. The project-configuration checker
@@ -395,8 +441,8 @@ remain release-qualification items.
 4. Iterate on typed SQL holes and diagnostics policy; qualify dialects and editions using actual SDKs.
    Retain lexical fallback if the gate remains incomplete.
 5. Extend artifact enrichment with configuration/dependency freshness checks, resource inspections and
-   performance qualification. Add optional CLI compilation and argument-aware macro workflows after
-   defining the executable/profile/target boundary.
+   performance qualification. Extend the explicit CLI workflow with catalog generation, richer macro
+   argument assistance and environment/adapter qualification.
 
 Project macro lookup uses a content-dependent `ScalarIndexExtension<String>` over SQL/Jinja template
 tokens. Current-project lookups open PSI for indexed files containing the requested macro name and
