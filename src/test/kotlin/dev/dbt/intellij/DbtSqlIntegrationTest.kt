@@ -26,6 +26,21 @@ class DbtSqlIntegrationTest : BasePlatformTestCase() {
         return language!!
     }
 
+    fun testNativeEditorSettingPreservesJetBrainsSqlLanguageAndDialect() {
+        sql()
+        myFixture.addFileToProject("warehouse/dbt_project.yml", "name: warehouse\n")
+        val file = myFixture.addFileToProject("warehouse/models/native.sql", "select 1")
+        val settings = project.getService(dev.dbt.intellij.config.DbtSettings::class.java)
+        settings.preserveNativeSql = true
+        assertNull(DbtSqlLanguageSubstitutor().getLanguage(file.virtualFile, project))
+        myFixture.configureFromExistingVirtualFile(file.virtualFile)
+        assertFalse(myFixture.file.language == DbtLanguage)
+        assertTrue(myFixture.file.language.isKindOf(Language.findLanguageByID("SQL")!!))
+        assertFalse(myFixture.file.viewProvider is DbtSqlViewProvider)
+        settings.preserveNativeSql = false
+        assertEquals(DbtLanguage, DbtSqlLanguageSubstitutor().getLanguage(file.virtualFile, project))
+    }
+
     fun testNativeSqlRootIsDisabledByDefault() {
         val sql = sql()
         val file = myFixture.configureByText(DbtFileType.INSTANCE, "select {{ ref('orders') }}")

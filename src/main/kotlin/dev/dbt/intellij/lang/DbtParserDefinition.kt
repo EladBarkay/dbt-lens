@@ -23,6 +23,7 @@ class DbtParserDefinition : ParserDefinition {
     override fun createElement(node: ASTNode): PsiElement = when (node.elementType) {
         DbtTypes.MACRO -> DbtMacro(node)
         DbtTypes.VARIABLE -> DbtVariable(node)
+        DbtTypes.VALUE -> dev.dbt.intellij.resources.DbtValue(node)
         else -> ASTWrapperPsiElement(node)
     }
     override fun createFile(viewProvider: FileViewProvider): PsiFile = DbtFile(viewProvider)

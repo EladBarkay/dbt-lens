@@ -8,6 +8,7 @@ import dev.dbt.intellij.editor.DbtSyntaxHighlighter
 import dev.dbt.intellij.lang.DbtFileType
 import dev.dbt.intellij.lang.DbtTypes as T
 import dev.dbt.intellij.psi.DbtVariable
+import dev.dbt.intellij.psi.DbtMacro
 import dev.dbt.intellij.psi.LocalMacros
 
 class DbtEditorTest : BasePlatformTestCase() {
@@ -35,7 +36,7 @@ class DbtEditorTest : BasePlatformTestCase() {
         val macro = LocalMacros.declarations(file).single()
         assertEquals("normalize", macro.name)
         assertEquals(listOf("value", "fallback"), macro.parameters)
-        val reference = PsiTreeUtil.findChildrenOfType(file, DbtVariable::class.java).mapNotNull { it.reference }.single()
+        val reference = PsiTreeUtil.findChildrenOfType(file, DbtVariable::class.java).mapNotNull { it.reference }.single { it.element.text == "normalize" }
         assertEquals(macro, reference.resolve())
         assertEquals(file.text.indexOf("normalize('x')"), reference.element.textOffset)
         assertEquals(1, ReferencesSearch.search(macro).findAll().size)
@@ -56,16 +57,17 @@ class DbtEditorTest : BasePlatformTestCase() {
         assertEquals(file.viewProvider.contents.toString(), file.node.text)
     }
 
-    fun testParametersAndFiltersDoNotResolveAsMacros() {
+    fun testBindingsShadowCallsButCustomFiltersCanNavigate() {
         val file = parse("{% macro m() %}{% endmacro %}{% macro other(m) %}{{ m() }}{% endmacro %}{{ 'x'|m() }}")
         val calls = PsiTreeUtil.findChildrenOfType(file, DbtVariable::class.java).mapNotNull { it.reference }
-        assertEquals(1, calls.size)
-        assertNull(calls.single().resolve())
+        assertEquals(2, calls.size)
+        assertEquals(T.PARAMETER_NAME, calls.first().resolve()!!.node.elementType)
+        assertTrue(calls.last().resolve() is DbtMacro)
         val assigned = parse("{% macro m() %}{% endmacro %}{% set m = callback %}{{ m() }}")
-        assertNull(PsiTreeUtil.findChildrenOfType(assigned, DbtVariable::class.java).mapNotNull { it.reference }.single().resolve())
+        assertEquals(T.BINDING_NAME, PsiTreeUtil.findChildrenOfType(assigned, DbtVariable::class.java).mapNotNull { it.reference }.single().resolve()!!.node.elementType)
         val filtered = parse("{% macro m() %}{% endmacro %}{{ m()|upper }} {{ 'x'|replace(m()) }} {{ 'x'|m()() }}")
         val resolved = PsiTreeUtil.findChildrenOfType(filtered, DbtVariable::class.java).mapNotNull { it.reference?.resolve() }
-        assertEquals(2, resolved.size)
+        assertEquals(3, resolved.size)
     }
 
     fun testUnclosedBlocksAndWrongClosersAreDiagnosed() {

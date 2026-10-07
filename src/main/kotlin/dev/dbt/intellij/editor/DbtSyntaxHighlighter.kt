@@ -27,8 +27,8 @@ class DbtSyntaxHighlighter : SyntaxHighlighterBase() {
     companion object {
         private fun key(name: String, fallback: TextAttributesKey) = TextAttributesKey.createTextAttributesKey("DBT_$name", fallback)
         val KEYS = mapOf(
-            T.EXPR_OPEN to key("DELIMITER", Colors.MARKUP_TAG), T.EXPR_CLOSE to key("DELIMITER", Colors.MARKUP_TAG),
-            T.STMT_OPEN to key("DELIMITER", Colors.MARKUP_TAG), T.STMT_CLOSE to key("DELIMITER", Colors.MARKUP_TAG),
+            T.EXPR_OPEN to key("DELIMITER", Colors.BRACES), T.EXPR_CLOSE to key("DELIMITER", Colors.BRACES),
+            T.STMT_OPEN to key("DELIMITER", Colors.BRACES), T.STMT_CLOSE to key("DELIMITER", Colors.BRACES),
             T.KEYWORD to key("KEYWORD", Colors.KEYWORD), T.IDENTIFIER to key("IDENTIFIER", Colors.IDENTIFIER),
             T.STRING to key("STRING", Colors.STRING), T.NUMBER to key("NUMBER", Colors.NUMBER),
             T.COMMENT to key("COMMENT", Colors.BLOCK_COMMENT), T.OPERATOR to key("OPERATOR", Colors.OPERATION_SIGN),
