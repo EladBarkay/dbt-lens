@@ -18,16 +18,34 @@ import java.util.concurrent.ConcurrentHashMap
 /** Project-scoped language selection. The global SQL file association remains owned by the IDE. */
 class DbtSqlLanguageSubstitutor : LanguageSubstitutor() {
     override fun getLanguage(file: VirtualFile, project: Project): Language? {
-        if (!file.isValid || file.isDirectory || !file.extension.equals("sql", ignoreCase = true) || project.isDisposed) return null
+        if (
+            !file.isValid ||
+                file.isDirectory ||
+                !file.extension.equals("sql", ignoreCase = true) ||
+                project.isDisposed
+        )
+            return null
         val sql = Language.findLanguageByID("SQL")
-        val host = com.intellij.openapi.fileTypes.FileTypeManager.getInstance().getFileTypeByFileName(file.name)
-        if (project.getService(dev.dbt.intellij.config.DbtSettings::class.java).preserveNativeSql && sql != null &&
-            host is com.intellij.openapi.fileTypes.LanguageFileType && host.language.isKindOf(sql)) return null
-        return if (project.getService(DbtProjectRoots::class.java).rootFor(file) != null) DbtLanguage else null
+        val host =
+            com.intellij.openapi.fileTypes.FileTypeManager.getInstance()
+                .getFileTypeByFileName(file.name)
+        if (
+            project.getService(dev.dbt.intellij.config.DbtSettings::class.java).preserveNativeSql &&
+                sql != null &&
+                host is com.intellij.openapi.fileTypes.LanguageFileType &&
+                host.language.isKindOf(sql)
+        )
+            return null
+        return if (project.getService(DbtProjectRoots::class.java).rootFor(file) != null)
+            DbtLanguage
+        else null
     }
 }
 
-/** Cheap directory decisions, bounded in memory and invalidated by VFS structure/project-root changes. */
+/**
+ * Cheap directory decisions, bounded in memory and invalidated by VFS structure/project-root
+ * changes.
+ */
 @Service(Service.Level.PROJECT)
 class DbtProjectRoots(private val project: Project) : Disposable {
     private val directories = ConcurrentHashMap<VirtualFile, CachedValue<VirtualFile?>>()
@@ -35,14 +53,21 @@ class DbtProjectRoots(private val project: Project) : Disposable {
     fun rootFor(file: VirtualFile): VirtualFile? {
         val directory = file.parent ?: return null
         if (directories.size >= 512) directories.clear()
-        return directories.computeIfAbsent(directory) { dir ->
-            CachedValuesManager.getManager(project).createCachedValue({
-                CachedValueProvider.Result.create(
-                    discover(dir), VirtualFileManager.VFS_STRUCTURE_MODIFICATIONS,
-                    ProjectRootModificationTracker.getInstance(project)
-                )
-            }, false)
-        }.value
+        return directories
+            .computeIfAbsent(directory) { dir ->
+                CachedValuesManager.getManager(project)
+                    .createCachedValue(
+                        {
+                            CachedValueProvider.Result.create(
+                                discover(dir),
+                                VirtualFileManager.VFS_STRUCTURE_MODIFICATIONS,
+                                ProjectRootModificationTracker.getInstance(project),
+                            )
+                        },
+                        false,
+                    )
+            }
+            .value
     }
 
     private fun discover(directory: VirtualFile): VirtualFile? {
@@ -51,5 +76,4 @@ class DbtProjectRoots(private val project: Project) : Disposable {
     }
 
     override fun dispose() = directories.clear()
-
 }

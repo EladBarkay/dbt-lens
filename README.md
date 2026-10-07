@@ -2,11 +2,27 @@
 
 SQL and Jinja editing for dbt projects in JetBrains IDEs.
 
-An early, installable editor prototype for the production-plugin design. This repository implements
-the first parsing/editor milestone and the mixed-language feasibility experiment. It is not the full
-dbt project-intelligence release.
+Version 1.0.0 combines offline Jinja editing, project/package/resource navigation, optional saved
+artifact documentation and lineage, and explicit local dbt compilation. It works in IntelliJ IDEA
+and PyCharm, including configurations without Database Tools or native YAML support.
 
-## What works in this development build
+The default editor provides lexical SQL coloring. **Settings → dbt Lens → Keep the native SQL editor**
+retains JetBrains dialect assistance and disables dbt Lens Jinja editing in ordinary SQL files.
+Simultaneous native SQL/Jinja assistance remains experimental.
+
+## Get started
+
+1. Build the plugin or obtain `dbt-lens-1.0.0.zip` from a passing CI run. Install it through
+   **Settings → Plugins → Install Plugin from Disk**, then restart the IDE.
+2. Open an IDE project containing `dbt_project.yml`, then open a model's `.sql` file. Jinja assistance
+   activates automatically. Use completion, Go to Declaration and Quick Documentation as usual.
+3. Open **View → Tool Windows → dbt Lens** for saved compiled SQL, documentation and lineage.
+   These views work with an existing manifest without a dbt installation.
+4. For CLI actions, choose the executable and optional profiles/target under **Settings → dbt Lens**.
+   **Generate manifest** creates metadata; **Compile current** or **Compile project** generates SQL.
+   Compilation can query the configured warehouse. Commands run only after an explicit action.
+
+## Capabilities
 
 - Source-preserving Jinja tokens, whitespace control, comments, raw blocks and restartable lexing.
 - Nested template blocks and macro declarations with parameter names/default expressions.
@@ -98,14 +114,14 @@ PyCharm's legacy SQL syntax-table files and otherwise unclaimed SQL files receiv
 file type beneath a dbt marker. This fallback also works when commercial modules are disabled.
 Default generated directories `target`, `logs` and `.git` are excluded. SQL files outside dbt project
 roots keep their normal SQL editing behavior. Virtual environments and `node_modules` are also excluded.
-Custom output-directory configuration is not yet parsed. Dependencies are only read; dbt commands and
+Custom output directories are not yet excluded from editor discovery. Dependencies are only read; dbt commands and
 project code are never executed for editor assistance. The name index tokenizes candidate template files
 independently of file type; semantic assistance is scoped to the detected dbt root and its installed packages.
 
 The plugin also associates `*.dbt.sql`, `*.jinja` and `*.j2`. Open
 [examples/local-macros.dbt.sql](examples/local-macros.dbt.sql) to try completion, navigation and usages.
 For a file without a detected dbt root, use **Override File Type** and
-choose **dbt Jinja**. After updating to dbt Lens 0.2.4, restart the IDE and reopen the model to refresh its
+choose **dbt Jinja**. After updating to dbt Lens 1.0.0, restart the IDE and reopen the model to refresh its
 existing language selection.
 
 The plugin keeps its original `dev.dbt.jinja` ID so dbt Lens upgrades existing installations.
@@ -186,26 +202,28 @@ Simultaneous native SQL assistance and complete Jinja editing remain a separate 
 
 ## Build and test
 
-Requires a **JDK 21** and network access for the first build. The Gradle wrapper is pinned to 9.0.0
+Requires a **JDK 21** and network access for the first build. The Gradle wrapper is pinned to 9.3.0
 with a distribution checksum; the Kotlin compiler is 2.3.21 (language/API level 2.2, Java 21 output)
 and the IntelliJ Platform Gradle plugin is 2.19.0.
-The default SDK is IntelliJ IDEA 2025.3.3. No dbt installation is needed for the IDE suites;
+The default SDK is IntelliJ IDEA 2025.3.3. Use `./gradlew ktfmtFormat` to apply the pinned Kotlin style. No dbt installation is needed for the IDE suites;
 the CLI process fixtures use `/usr/bin/python3` on Unix hosts. Packaging does not require Python or dbt.
 The build resolves its matching JetBrains Runtime automatically, unless a local runtime is supplied.
 
 ```sh
-./gradlew test verifyPluginProjectConfiguration verifyPluginStructure buildPlugin
+./gradlew check verifyPluginProjectConfiguration verifyPluginStructure buildPlugin
 ```
 
 For binary compatibility and API checks against the same SDK, run `./gradlew verifyPlugin`.
+Add `-PverifySupportedIdes=true` to also verify the pinned PyCharm version. CI runs both IDEs and
+a minimal host with SQL, TextMate, JSON/YAML and commercial modules disabled.
 Use `-PverifierOffline=true` to restrict the verifier to already downloaded dependencies; the validation
 record describes the limits of the offline result.
 
-The installation ZIP appears at `build/distributions/dbt-lens-0.2.4.zip`. Use **Settings → Plugins → Install Plugin
+The installation ZIP appears at `build/distributions/dbt-lens-1.0.0.zip`. Use **Settings → Plugins → Install Plugin
 from Disk** to install it in a compatible IDE, or `./gradlew runIde` to start a separate development IDE.
-The compatibility range in the descriptor is builds 253–262, including PyCharm 2026.2. Only versions
-actually exercised in [docs/feasibility.md](docs/feasibility.md) are validated; this development build is
-not published to the JetBrains Marketplace.
+The minimum IDE build is 253. CI exercises IntelliJ IDEA 2025.3.3 and PyCharm 2026.2.3; newer IDEs
+can install the plugin, but compatibility claims cover the versions actually tested. Qualification
+is recorded in [docs/feasibility.md](docs/feasibility.md). This release is not published to the JetBrains Marketplace.
 
 To use an installed SDK and runtime, supply paths explicitly (on macOS, SDK paths end in `Contents`):
 
@@ -215,7 +233,7 @@ To use an installed SDK and runtime, supply paths explicitly (on macOS, SDK path
   -PlocalRuntimePath='/path/to/jdk/Contents/Home'
 ```
 
-An SDK outside the proposed range is a development experiment, not a compatibility claim.
+An SDK outside the tested versions is a development experiment, not a compatibility claim.
 
 To check a locally installed IDE while continuing to compile against the pinned IntelliJ SDK:
 
@@ -223,6 +241,10 @@ To check a locally installed IDE while continuing to compile against the pinned 
 ./gradlew verifyPlugin -PverifierOffline=true \
   -PverificationIdePath='/Applications/PyCharm.app/Contents'
 ```
+
+When running verification with Java 25, also install Java 21 for baseline compilation. If Gradle
+cannot discover both installations, supply their paths with
+`-Porg.gradle.java.installations.paths=/path/to/jdk21,/path/to/jdk25`.
 
 PyCharm 2026.2 requires Java 25 at runtime. The plugin itself remains compiled for Java 21 so it also
 works with the original IntelliJ 2025.3 baseline.
@@ -327,16 +349,24 @@ execute project code or dbt commands; CLI actions are explicit.
 
 See [docs/feasibility.md](docs/feasibility.md) for the integration gate and the next milestones.
 
-## Version review workflow
+## Releases and maintenance
 
-`main` initially contains repository basics. The implementation is reviewed as stacked PRs:
-`0.1.0` → `main`, `0.1.1` → `0.1.0`, `0.1.2` → `0.1.1`, `0.1.3` → `0.1.2`, `0.1.4` → `0.1.3`,
-`0.1.5` → `0.1.4`, `0.1.6` → `0.1.5`, `0.1.7` → `0.1.6`, `0.1.8` → `0.1.7`, `0.1.9` → `0.1.8`,
-`0.1.10` → `0.1.9`, `0.1.11` → `0.1.10`, and `0.1.12` → `0.1.11`.
-Review each PR against its immediate predecessor. Earlier development versions retain their original
-names and compatibility ranges; dbt Lens branding is introduced in 0.1.4.
+The original 0.1.0–0.1.12 development PRs are consolidated into five checkpoints:
 
-Versions 0.1.0–0.1.3 were recovered from the original editing history because Git was initialized at
-0.1.3. The recovered 0.1.3 tree matches the original Git baseline, and rebuilt historical classes
-are checked against the retained development packages. These are reconstructed commits, not the
-original timestamps of development. The previous Git history is preserved on `archive/pre-stack`.
+- **0.2.0**: editor foundations, automatic activation, folding and enclosure navigation (#2–#7).
+- **0.2.1**: package/resource navigation, macro documentation and YAML assistance (#8–#9).
+- **0.2.2**: scoped usages, smart completion/templates and adapter dispatch (#10–#11).
+- **0.2.3**: saved output, documentation and lineage with native styling (#12–#13).
+- **0.2.4**: explicit local manifest generation and compilation (#14).
+
+Each checkpoint has its own version, consolidated PR and `v0.2.x` tag. Historical development commits
+are retained; their original PRs are merged. **1.0.0** adds the full project review fixes and repeatable
+maintenance/release checks. See [CHANGELOG.md](CHANGELOG.md), [the release review](docs/release-review.md)
+and [CONTRIBUTING.md](CONTRIBUTING.md).
+
+Version tags trigger the complete CI matrix and binary verifier, then create a **draft** GitHub release
+with the checked ZIP and SHA-256 checksum. Publishing the draft or submitting to Marketplace is a
+separate maintainer action. Tag names must match the packaged version and point to a commit in main.
+
+The project uses [Apache-2.0](LICENSE). Bundled schemas retain their upstream license and provenance;
+see [NOTICE](NOTICE). dbt Lens is an independent project and is not endorsed by dbt Labs or JetBrains.

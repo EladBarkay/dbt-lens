@@ -4,6 +4,7 @@ on:
     branches: [main]
   pull_request:
   workflow_dispatch:
+  workflow_call:
 concurrency:
   group: plugin-checks-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
@@ -12,27 +13,102 @@ permissions:
 jobs:
   editor:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     strategy:
+      fail-fast: false
       matrix:
         include:
-          - sql: false
+          - name: sql
+            platform: IU
+            version: '2025.3.3'
+            java: '21'
+            sql: true
             textmate: true
-          - sql: true
+            yaml: true
+            free: false
+          - name: textmate
+            platform: IU
+            version: '2025.3.3'
+            java: '21'
+            sql: false
             textmate: true
-          - sql: false
+            yaml: true
+            free: false
+          - name: minimal
+            platform: IU
+            version: '2025.3.3'
+            java: '21'
+            sql: false
             textmate: false
+            yaml: false
+            free: true
+          - name: pycharm-free
+            platform: PY
+            version: '2026.2.3'
+            java: '25'
+            sql: false
+            textmate: true
+            yaml: true
+            free: true
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: ${{ matrix.java }}
+      - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+      - name: Test, format and package
+        run: >-
+          ./gradlew check verifyPluginProjectConfiguration verifyPluginStructure buildPlugin
+          -PplatformType=${{ matrix.platform }} -PplatformVersion=${{ matrix.version }}
+          -PwithSqlTests=${{ matrix.sql }} -PwithTextmateTests=${{ matrix.textmate }}
+          -PwithYamlTests=${{ matrix.yaml }} -PfreeEditionTests=${{ matrix.free }}
+          --console=plain
+      - name: Package checksum
+        if: matrix.name == 'sql'
+        working-directory: build/distributions
+        run: sha256sum *.zip > SHA256SUMS
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: matrix.name == 'sql'
+        with:
+          name: plugin-package
+          path: build/distributions/
+          if-no-files-found: error
+          retention-days: 14
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: tests-${{ matrix.name }}
+          path: build/reports/tests/
+          retention-days: 14
+  verifier:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        id: baseline-java
         with:
           distribution: temurin
           java-version: '21'
-      - uses: gradle/actions/setup-gradle@v4
-      - run: ./gradlew test verifyPluginProjectConfiguration verifyPluginStructure buildPlugin -PwithSqlTests=${{ matrix.sql }} -PwithTextmateTests=${{ matrix.textmate }} --console=plain
-      - uses: actions/upload-artifact@v4
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        id: verifier-java
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+      - name: Verify supported IDE binaries
+        run: >-
+          ./gradlew verifyPlugin -PverifySupportedIdes=true
+          -Porg.gradle.java.installations.paths="${{ steps.baseline-java.outputs.path }},${{ steps.verifier-java.outputs.path }}"
+          --console=plain
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
-          name: checks-sql-${{ matrix.sql }}-textmate-${{ matrix.textmate }}
-          path: |
-            build/reports/tests/
-            build/distributions/
+          name: plugin-verifier
+          path: build/reports/pluginVerifier/
+          retention-days: 14

@@ -1,25 +1,30 @@
 package dev.dbt.intellij.lang
 
 import com.intellij.lang.Language
-import com.intellij.openapi.fileTypes.LanguageFileType
 import com.intellij.openapi.fileTypes.FileTypeManager
+import com.intellij.openapi.fileTypes.LanguageFileType
 import com.intellij.openapi.util.IconLoader
 import com.intellij.psi.tree.IElementType
 import com.intellij.psi.tree.IFileElementType
-import com.intellij.psi.tree.TokenSet
 import com.intellij.psi.tree.OuterLanguageElementType
+import com.intellij.psi.tree.TokenSet
 import javax.swing.Icon
 
 object DbtLanguage : Language("dbt Jinja")
 
 class DbtFileType private constructor() : LanguageFileType(DbtLanguage) {
     override fun getName() = "dbt Jinja"
+
     override fun getDescription() = "dbt SQL/Jinja template"
+
     override fun getDefaultExtension() = "jinja"
+
     override fun getIcon(): Icon {
         val sql = FileTypeManager.getInstance().getFileTypeByExtension("sql")
-        return sql.takeIf { it !== this && (it.name == "SQL" || it.defaultExtension == "sql") }?.icon ?: SQL_ICON
+        return sql.takeIf { it !== this && (it.name == "SQL" || it.defaultExtension == "sql") }
+            ?.icon ?: SQL_ICON
     }
+
     companion object {
         @JvmField val INSTANCE = DbtFileType()
         private val SQL_ICON = IconLoader.getIcon("/icons/sql.svg", DbtFileType::class.java)
@@ -28,6 +33,7 @@ class DbtFileType private constructor() : LanguageFileType(DbtLanguage) {
 
 object DbtTypes {
     private fun type(name: String) = IElementType(name, DbtLanguage)
+
     val FILE = IFileElementType(DbtLanguage)
     val TEXT = type("SQL_TEXT")
     val EXPR_OPEN = type("{{")
@@ -40,10 +46,15 @@ object DbtTypes {
     val STRING = type("STRING")
     val NUMBER = type("NUMBER")
     val OPERATOR = type("OPERATOR")
-    val LPAREN = type("("); val RPAREN = type(")")
-    val LBRACKET = type("["); val RBRACKET = type("]")
-    val LBRACE = type("{"); val RBRACE = type("}")
-    val COMMA = type(","); val DOT = type("."); val COLON = type(":")
+    val LPAREN = type("(")
+    val RPAREN = type(")")
+    val LBRACKET = type("[")
+    val RBRACKET = type("]")
+    val LBRACE = type("{")
+    val RBRACE = type("}")
+    val COMMA = type(",")
+    val DOT = type(".")
+    val COLON = type(":")
     val EXPRESSION = type("EXPRESSION")
     val STATEMENT = type("STATEMENT")
     val BLOCK = type("BLOCK")
