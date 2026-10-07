@@ -313,6 +313,70 @@ exact **PY-262.10968.92** SDK with commercial/database modules disabled. Reports
 **1.410** reports **Compatible** against both **IU-253.31033.145** and **PY-262.10968.92**, with the
 same merged-module and optional-dependency qualification limits. The feature PR targets `0.1.8`.
 
+Version **0.1.10** adds optional saved-artifact enrichment through a shared project service and the
+existing documentation provider. The reader accepts manifest schemas **v8–v12** and catalog **v1**;
+it preserves resource/package/version identities and maps files through the existing root/dependency
+boundaries. Source navigation remains authoritative and independent of artifact availability. Saved
+descriptions, argument metadata, columns/types, relation names and tests enrich documentation. Source
+comments retain priority in macro hovers. Unique case-insensitive column matches accommodate warehouse
+case normalization without merging ambiguous documented names.
+
+The **dbt Lens** tool window shares this metadata across a detached read-only compiled SQL viewer,
+documentation and a native resource-lineage graph. Saved SQL may come from the manifest or a bounded
+generated-file fallback. Macro definitions and Python model code are never presented as compiled SQL.
+The resource selector handles multiple macros or property-YAML resources in one file. Lineage has
+upstream/downstream/both controls, depth 1–3, cycle handling and an 80-resource cap. Node navigation
+uses local original files, macro offsets and the existing optional YAML resource resolver where possible.
+The detached viewer uses the available native SQL file type; source-file dialect mappings are not inherited.
+
+Parsing and preview reads run on workers. Artifact cache invalidation observes modification time,
+size and file identity; explicit refresh bypasses the cache. A generation check prevents old async
+results from replacing a newly selected file/resource. Source differences include unsaved SQL/Jinja
+edits. Configuration, dependency and warehouse changes are not completely detected. Artifact reads are
+limited to 64 MB/file and 100,000 resources; compiled output to 2 MB. Invalid/unsupported/foreign
+artifacts and catalog-generation errors receive readable statuses. Dynamic/external output directories
+and symlink escapes are rejected. These limits are conservative development safeguards, not large-project
+performance qualification. File-change races are detected within a read; two independently generated
+artifacts can still be of different ages, which are displayed separately.
+
+No CLI command, Jinja evaluation or warehouse access is implemented. Future compilation should delegate
+to dbt with explicit executable/profile/target settings because introspective macros may query the warehouse.
+Macro invocation requires its own argument/context workflow. Live data preview remains deferred.
+
+The 0.1.10 matrix passes **101 SQL-enabled tests**, **83 minimal-host tests**, and **94 tests** on the
+exact **PY-262.10968.92** SDK with commercial/database modules disabled. Reports are saved under
+`build/reports/tests/0110-*`. Disk-backed artifact fixtures exercise invalid/missing/foreign output,
+custom/nested roots and dependency files, schema versions, resource versions, catalog errors and column
+case normalization, source/macro docs, unsaved changes, file replacement/deletion, size limits and
+symlink escapes. Native panel fixtures exercise async preview loading, resource switching, read-only
+documents, stale-source labels and non-dbt exclusion; graph fixtures cover direction/depth/cycles/caps.
+
+Configuration/structure checks and packaging pass. `dbt-lens-0.1.10.zip` retains Java **21** bytecode
+(class version **65**). Offline Plugin Verifier **1.410** reports **Compatible** against both
+**IU-253.31033.145** and **PY-262.10968.92**, with merged-module and optional-dependency qualification
+limits. It reports **4 deprecated API usages** on IntelliJ and **6** on PyCharm, plus **6 experimental
+API usages** from ToolWindowFactory default methods. The SDK-matched JetBrains Runtime is now selected
+automatically unless an explicit local runtime is supplied; this avoids the indexing-process startup
+failure observed with the temporary Temurin 21 runtime. The feature PR targets `0.1.9`.
+
+Version **0.1.11** replaces the artifact tab's unstyled Swing HTML pane with JetBrains' native
+`JBHtmlPane`. The local renderer uses regular IDE label-font text, native theme colors, scaled padding,
+compact paragraphs, bold section headings and forced word wrapping. It is registered under the panel's
+disposable. The shared HTML formatter adds labeled column tables, omits the type column when no types
+are known, and displays tests as individual list items. The artifact tab keeps its staleness warning
+in the status area; hover documentation retains the warning in its content.
+
+The rendering regression uses the actual component with long test identifiers at **360 px** and
+**800 px**, checks the regular IDE font and minimum width, and optionally exports native-component PNGs
+when `DBT_DOCS_RENDER_DIR` is supplied. Those PNGs were inspected on both SDKs during development.
+The suites pass **102 SQL-enabled tests** and **95 tests** on the exact PyCharm SDK with commercial/database
+modules disabled. Reports are saved under `build/reports/tests/0111-*`. Packaging/structure checks pass;
+the final package reuses the already-generated settings index because no configurable changed.
+Plugin Verifier **1.410** reports **Compatible** against **IU-253.31033.145** and **PY-262.10968.92**,
+subject to the existing merged-module/optional-dependency limits. It reports **23 experimental API
+usages**, including the public native HTML pane APIs, and **4/6 deprecated usages** respectively.
+The feature PR targets `0.1.10`. No CLI generation or compilation behavior changes in this version.
+
 No interactive user-IDE UI qualification, PostgreSQL/Snowflake assistance qualification,
 IntelliJ 2026.1 compatibility run or performance benchmark has been performed. Parser fixtures are
 editing correctness checks, not runtime/dbt equivalence tests. The project-configuration checker
@@ -330,8 +394,9 @@ remain release-qualification items.
    Dynamic references remain unknown. Add rename only after collision and ambiguity tests exist.
 4. Iterate on typed SQL holes and diagnostics policy; qualify dialects and editions using actual SDKs.
    Retain lexical fallback if the gate remains incomplete.
-5. Add schema-validated artifact enrichment, stale-artifact handling and resource inspections; only then
-   consider optional execution and compiled previews.
+5. Extend artifact enrichment with configuration/dependency freshness checks, resource inspections and
+   performance qualification. Add optional CLI compilation and argument-aware macro workflows after
+   defining the executable/profile/target boundary.
 
 Project macro lookup uses a content-dependent `ScalarIndexExtension<String>` over SQL/Jinja template
 tokens. Current-project lookups open PSI for indexed files containing the requested macro name and
