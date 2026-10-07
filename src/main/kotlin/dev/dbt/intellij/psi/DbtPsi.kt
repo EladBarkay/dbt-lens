@@ -26,22 +26,31 @@ class DbtMacro(node: ASTNode) : ASTWrapperPsiElement(node), PsiNameIdentifierOwn
 
 class DbtVariable(node: ASTNode) : ASTWrapperPsiElement(node) {
     override fun getReference(): PsiReference? {
-        // Only direct unqualified calls are eligible. Attributes, filters, imports and dynamic calls are excluded.
-        if (parent?.node?.elementType != DbtTypes.CALL || parent.firstChild != this) return null
-        var callee: PsiElement = parent
+        val access = parent.takeIf { it?.node?.elementType == DbtTypes.ACCESS && it.lastChild == this }
+        val namespace = access?.firstChild?.takeIf { it is DbtVariable }?.text
+        if (access != null && (access.children.size != 2 || access.node.findChildByType(DbtTypes.DOT) == null ||
+            namespace == null || namespace != ProjectMacros.namespace(this))) return null
+        val target: PsiElement = access ?: this
+        if (target.parent?.node?.elementType != DbtTypes.CALL || target.parent.firstChild != target) return null
+        var callee: PsiElement = target.parent
         while (callee.parent?.node?.elementType in setOf(DbtTypes.CALL, DbtTypes.ACCESS) && callee.parent.firstChild == callee) {
             callee = callee.parent
         }
         val binary = callee.parent
         if (binary?.node?.elementType == DbtTypes.BINARY && binary.firstChild != callee &&
             binary.node.getChildren(null).any { it.text in setOf("|", "is") }) return null
-        return LocalMacroReference(this)
+        return LocalMacroReference(this, namespace)
     }
 }
 
-class LocalMacroReference(element: DbtVariable) : PsiPolyVariantReferenceBase<DbtVariable>(element, TextRange(0, element.textLength), true) {
-    override fun multiResolve(incompleteCode: Boolean): Array<ResolveResult> = LocalMacros.candidatesAt(element)
+class LocalMacroReference(element: DbtVariable, private val namespace: String? = null) : PsiPolyVariantReferenceBase<DbtVariable>(element, TextRange(0, element.textLength), true) {
+    override fun multiResolve(incompleteCode: Boolean): Array<ResolveResult> {
+        if (LocalMacros.isShadowed(element, namespace ?: element.text)) return emptyArray()
+        val local = if (namespace == null) LocalMacros.candidates(element.containingFile, element.text) else emptyList()
+        val candidates = if (local.isNotEmpty()) local else ProjectMacros.candidates(element, element.text)
+        return candidates
         .map { PsiElementResolveResult(it) }.toTypedArray()
+    }
     override fun getVariants(): Array<Any> = emptyArray()
     override fun handleElementRename(newElementName: String): PsiElement = throw IncorrectOperationException("Macro rename is not available yet")
 }
@@ -53,20 +62,21 @@ object LocalMacros {
             PsiTreeUtil.getParentOfType(macro, DbtMacro::class.java) == null && macro.parent is DbtFile
         }
     fun candidates(file: PsiFile, name: String): List<DbtMacro> = declarations(file).filter { it.name == name }
-    fun candidatesAt(element: DbtVariable): List<DbtMacro> {
-        val name = element.text
+    fun isShadowed(element: PsiElement, name: String): Boolean {
         val owner = PsiTreeUtil.getParentOfType(element, DbtMacro::class.java)
-        if (name in (owner?.parameters ?: emptyList())) return emptyList()
-        // Until lexical bindings have their own PSI, conservatively exclude names bound by statement headers.
-        // This can miss valid navigation after a scope ends, but cannot navigate a shadowed name to a macro.
+        if (name in (owner?.parameters ?: emptyList())) return true
+        // Conservatively exclude bindings throughout the file, but never treat an assignment's RHS
+        // or a loop's iterable as a binding. Those expressions can call project macros.
         val statements = PsiTreeUtil.collectElements(element.containingFile) { it.node?.elementType == DbtTypes.STATEMENT }
         for (statement in statements) {
             val leaves = statement.node.getChildren(null).filter { it.elementType != com.intellij.psi.TokenType.WHITE_SPACE }
             val keyword = leaves.getOrNull(1)?.text
-            if (keyword in setOf("set", "for", "import", "from", "with")) {
-                if (leaves.drop(2).any { it.elementType in setOf(DbtTypes.IDENTIFIER, DbtTypes.KEYWORD) && it.text == name }) return emptyList()
+            if (keyword in setOf("set", "for")) {
+                if (leaves.any { it.elementType == DbtTypes.BINDING_NAME && it.text == name }) return true
+            } else if (keyword in setOf("import", "from", "with")) {
+                if (leaves.drop(2).any { it.elementType in setOf(DbtTypes.IDENTIFIER, DbtTypes.KEYWORD) && it.text == name }) return true
             }
         }
-        return candidates(element.containingFile, name)
+        return false
     }
 }

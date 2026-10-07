@@ -3,10 +3,14 @@ package dev.dbt.intellij
 import com.intellij.lang.Language
 import com.intellij.psi.PsiErrorElement
 import com.intellij.psi.util.PsiTreeUtil
+import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.editor.ex.EditorEx
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import dev.dbt.intellij.lang.DbtFileType
 import dev.dbt.intellij.lang.DbtLanguage
 import dev.dbt.intellij.sql.DbtSqlViewProvider
+import dev.dbt.intellij.lang.DbtTypes
+import dev.dbt.intellij.project.DbtSqlLanguageSubstitutor
 
 /** Run with -PwithSqlTests=true. SQL assertions use the real bundled parser, not a fake SQL language. */
 class DbtSqlIntegrationTest : BasePlatformTestCase() {
@@ -60,5 +64,47 @@ class DbtSqlIntegrationTest : BasePlatformTestCase() {
         val sqlFile = file.viewProvider.getPsi(sql)!!
         // This is an expected feasibility failure, so the prototype must remain disabled by default.
         assertNotEmpty(PsiTreeUtil.findChildrenOfType(sqlFile, PsiErrorElement::class.java))
+    }
+
+    fun testOrdinarySqlModelAutomaticallyGetsJinjaHighlightingAndCompletion() {
+        sql()
+        myFixture.addFileToProject("warehouse/dbt_project.yml", "name: warehouse\nversion: '1.0'\n")
+        val file = myFixture.addFileToProject("warehouse/models/orders.sql",
+            "{% macro normalize(value) %}{% endmacro %}{% macro normalizer(value) %}{% endmacro %}select {{ norm }}")
+        assertEquals("SQL", file.virtualFile.fileType.name)
+        myFixture.configureFromExistingVirtualFile(file.virtualFile)
+        assertEquals(DbtLanguage, myFixture.file.language)
+        assertEquals(DbtLanguage, myFixture.file.viewProvider.baseLanguage)
+        val iterator = (myFixture.editor as EditorEx).highlighter.createIterator(0)
+        val tokens = mutableSetOf<com.intellij.psi.tree.IElementType>()
+        while (!iterator.atEnd()) { tokens += iterator.tokenType; iterator.advance() }
+        assertTrue("The actual SQL editor must use the Jinja highlighter", DbtTypes.EXPR_OPEN in tokens)
+        myFixture.editor.caretModel.moveToOffset(myFixture.file.text.indexOf("norm }}") + 4)
+        assertContainsElements(myFixture.completeBasic().map { it.lookupString }, "normalize", "normalizer")
+    }
+
+    fun testSqlOutsideDbtAndGeneratedSqlKeepNativeSqlLanguage() {
+        sql()
+        val outside = myFixture.addFileToProject("queries/report.sql", "select 1")
+        myFixture.addFileToProject("warehouse/dbt_project.yml", "name: warehouse\n")
+        val compiled = myFixture.addFileToProject("warehouse/target/compiled/orders.sql", "select 1")
+        val substitutor = DbtSqlLanguageSubstitutor()
+        assertNull(substitutor.getLanguage(outside.virtualFile, project))
+        assertNull(substitutor.getLanguage(compiled.virtualFile, project))
+        myFixture.configureFromExistingVirtualFile(outside.virtualFile)
+        assertFalse(myFixture.file.language == DbtLanguage)
+        myFixture.configureFromExistingVirtualFile(compiled.virtualFile)
+        assertFalse(myFixture.file.language == DbtLanguage)
+    }
+
+    fun testProjectDetectionUpdatesWhenConfigIsCreatedAndRemoved() {
+        sql()
+        val file = myFixture.addFileToProject("warehouse/models/orders.sql", "select {{ ref('orders') }}")
+        val substitutor = DbtSqlLanguageSubstitutor()
+        assertNull(substitutor.getLanguage(file.virtualFile, project))
+        val config = myFixture.addFileToProject("warehouse/dbt_project.yml", "name: warehouse\n")
+        assertEquals(DbtLanguage, substitutor.getLanguage(file.virtualFile, project))
+        ApplicationManager.getApplication().runWriteAction { config.virtualFile.delete(this) }
+        assertNull(substitutor.getLanguage(file.virtualFile, project))
     }
 }
