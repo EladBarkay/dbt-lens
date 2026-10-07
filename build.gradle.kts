@@ -9,7 +9,7 @@ plugins {
 }
 
 group = "dev.dbt.intellij"
-version = "0.1.9"
+version = "0.1.10"
 
 repositories {
     mavenCentral()
@@ -22,7 +22,7 @@ dependencies {
         if (localIde.isPresent) local(localIde.get())
         else intellijIdea("2025.3.3") { useInstaller = false }
         val runtime = providers.gradleProperty("localRuntimePath")
-        if (runtime.isPresent) jetbrainsRuntimeLocal(runtime.get())
+        if (runtime.isPresent) jetbrainsRuntimeLocal(runtime.get()) else jetbrainsRuntime()
         bundledPlugin("com.intellij.modules.json")
         bundledPlugin("org.jetbrains.plugins.yaml")
         testFramework(TestFrameworkType.Platform)
