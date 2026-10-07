@@ -47,14 +47,15 @@ class DbtFeatureEditorTest : BasePlatformTestCase() {
         }
     }
 
-    fun testCollapsedMultilineMacroDisplaysClosingSignatureAndTag() {
+    fun testCollapsedMacroLeavesEntireSignatureVisible() {
         val source = "{%- macro upload_artifacts_to_table(\n  table_relation,\n  hashes=None\n) -%}\n  select 1\n{%- endmacro -%}"
         myFixture.configureByText(DbtFileType.INSTANCE, source)
         CodeFoldingManager.getInstance(project).updateFoldRegions(myFixture.editor)
-        val region = myFixture.editor.foldingModel.allFoldRegions.single { it.startOffset == source.indexOf('\n') }
+        val region = myFixture.editor.foldingModel.allFoldRegions.single { it.startOffset == source.indexOf("-%}") + 3 }
         myFixture.editor.foldingModel.runBatchFoldingOperation { region.isExpanded = false }
         val visible = source.take(region.startOffset) + region.placeholderText + source.substring(region.endOffset)
-        assertEquals("{%- macro upload_artifacts_to_table(…) -%} …{%- endmacro -%}", visible)
+        assertEquals(source.substringBefore("\n  select") + "…{%- endmacro -%}", visible)
+        assertFalse(myFixture.editor.foldingModel.isOffsetCollapsed(source.indexOf("hashes=None")))
         assertTrue(myFixture.editor.foldingModel.isOffsetCollapsed(source.indexOf("select 1")))
     }
 
@@ -62,14 +63,14 @@ class DbtFeatureEditorTest : BasePlatformTestCase() {
         root("name: warehouse\npackages-install-path: vendor\n")
         val config = myFixture.addFileToProject("warehouse/vendor/dbt_utils/dbt_project.yml", "name: dbt_utils\n")
         myFixture.addFileToProject("warehouse/vendor/dbt_utils/macros/helper.sql",
-            "{% macro serialize(value) %}\n{# Converts <value> & preserves nulls. #}\n{{ return(value) }}\n{% endmacro %}")
+            "{# Converts <value> & preserves nulls. #}\n{% macro serialize(value) %}\n{{ return(value) }}\n{% endmacro %}")
         myFixture.addFileToProject("warehouse/unrelated/dbt_project.yml", "name: unrelated\n")
         myFixture.addFileToProject("warehouse/unrelated/hidden.sql", "{% macro hidden() %}{% endmacro %}")
         ModuleRootModificationUtil.updateModel(module) { model -> model.contentEntries.first().addExcludeFolder(config.virtualFile.parent.parent.url) }
         open("warehouse/models/usage.jinja", "{{ dbt_utils.serialize(1) }} {{ serialize(2) }} {{ unrelated.hidden() }} {{ 'x'|dbt_utils.serialize() }} {{ 'x' is dbt_utils.serialize() }}")
         val serialize = calls().filter { it.text == "serialize" }
-        serialize.take(2).forEach { assertTrue(it.reference?.resolve() is DbtMacro) }
-        serialize.drop(2).forEach { assertNull("Filters/tests use a separate namespace", it.reference) }
+        serialize.take(3).forEach { assertTrue(it.reference?.resolve() is DbtMacro) }
+        assertNull("Tests use a separate registry", serialize.last().reference)
         assertEquals("helper.sql", serialize.first().reference!!.resolve()!!.containingFile.name)
         assertNull(calls().single { it.text == "hidden" }.reference)
         val docs = DocumentationManager.getProviderFromElement(serialize.first()).generateDoc(serialize.first(), serialize.first())!!
@@ -126,9 +127,9 @@ class DbtFeatureEditorTest : BasePlatformTestCase() {
     fun testHoverCommentsAndColorCategoriesRespectLocalGlobals() {
         root()
         open("warehouse/macros/docs.jinja", """
+            /* Reads <value>.
+               Keeps SQL docs. */
             {% macro example(value) %}
-              /* Reads <value>.
-                 Keeps SQL docs. */
               {{ value }} {{ graph.nodes }} {{ example(value) }}
             {% endmacro %}
             {% macro shadow(graph) %}{{ graph }}{% endmacro %}
@@ -142,5 +143,50 @@ class DbtFeatureEditorTest : BasePlatformTestCase() {
         val graph = calls().filter { it.text == "graph" }
         assertTrue(colors.any { it.forcedTextAttributesKey == DbtAnnotator.GLOBAL && it.startOffset == graph[0].textOffset })
         assertTrue(colors.any { it.forcedTextAttributesKey == DbtAnnotator.VARIABLE && it.startOffset == graph[1].textOffset })
+    }
+
+    fun testBareFiltersCallbacksAndKeywordArgumentColors() {
+        root()
+        open("warehouse/macros/filters.sql", """
+            {% macro custom(value) %}{% endmacro %}
+            {% macro sort(value) %}{% endmacro %}
+            {% macro consumer(rows) %}
+              {{ rows | custom | sort }} {{ consumer(rows=rows) }}
+              {{ apply(custom) }} {{ unknown.field }}
+            {% endmacro %}
+        """.trimIndent())
+        calls().filter { it.text == "custom" }.forEach { assertTrue(it.reference?.resolve() is DbtMacro) }
+        assertNull(calls().single { it.text == "sort" }.reference)
+        val colors = myFixture.doHighlighting()
+        for (name in listOf("custom", "sort")) {
+            val filter = calls().first { it.text == name }
+            assertTrue(colors.any { it.forcedTextAttributesKey == DbtAnnotator.CALL && it.startOffset == filter.textOffset })
+        }
+        assertTrue(colors.any { it.forcedTextAttributesKey == DbtAnnotator.ARGUMENT && it.startOffset == myFixture.file.text.indexOf("rows=rows") })
+        for (unknown in calls().filter { it.text in listOf("unknown", "field") }) {
+            assertFalse(colors.any { it.forcedTextAttributesKey == DbtAnnotator.VARIABLE && it.startOffset == unknown.textOffset })
+        }
+    }
+
+    fun testDocumentationUsesOnlyAdjacentCommentAboveMacro() {
+        val source = """
+            {# Above <first>. #}
+            {% macro first() %}
+              {# Below must be ignored. #}
+            {% endmacro %}
+            -- Above second.
+            -- Second line.
+            {% macro second() %}{% endmacro %}
+            select '/* Fake docs. */';
+            {% macro third() %}{# Inside must be ignored. #}{% endmacro %}
+            {{ first() }} {{ second() }} {{ third() }}
+        """.trimIndent()
+        myFixture.configureByText(DbtFileType.INSTANCE, source)
+        val docs = calls().associate { it.text to DocumentationManager.getProviderFromElement(it).generateDoc(it, it)!! }
+        assertTrue(docs.getValue("first").contains("Above &lt;first&gt;."))
+        assertFalse(docs.getValue("first").contains("Below"))
+        assertTrue(docs.getValue("second").contains("Above second.\nSecond line."))
+        assertFalse(docs.getValue("third").contains("Fake docs"))
+        assertFalse(docs.getValue("third").contains("Inside"))
     }
 }

@@ -20,7 +20,7 @@ import dev.dbt.intellij.project.DbtMacroIndex
 import dev.dbt.intellij.project.DbtProjectRoots
 
 object ProjectMacros {
-    private fun root(element: PsiElement): VirtualFile? = element.containingFile.originalFile.virtualFile?.let {
+    internal fun root(element: PsiElement): VirtualFile? = element.containingFile.originalFile.virtualFile?.let {
         element.project.getService(DbtProjectRoots::class.java).rootFor(it)
     }
 
@@ -44,7 +44,7 @@ object ProjectMacros {
             else root.findFileByRelativePath(path)
     }
 
-    private fun roots(element: PsiElement): List<VirtualFile> {
+    internal fun roots(element: PsiElement): List<VirtualFile> {
         val own = root(element) ?: return emptyList()
         var host = own
         var ancestor = own.parent

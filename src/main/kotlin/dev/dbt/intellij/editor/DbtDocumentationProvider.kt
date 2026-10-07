@@ -33,21 +33,29 @@ class DbtDocumentationProvider : AbstractDocumentationProvider() {
     }
 
     internal fun leadingComment(macro: DbtMacro): String? {
-        var child = macro.firstChild?.nextSibling
-        while (child != null && child.text.isBlank()) child = child.nextSibling
+        var child = macro.prevSibling
+        while (child != null && child.text.isBlank()) child = child.prevSibling
         if (child?.node?.elementType == T.COMMENT) {
             val text = child.text
             if (!text.endsWith("#}")) return null
             return text.removePrefix("{#-").removePrefix("{#").removeSuffix("-#}").removeSuffix("#}").trimIndent().trim()
         }
-        val text = child?.takeIf { it.node.elementType == T.TEXT }?.text?.trimStart() ?: return null
-        if (text.startsWith("/*")) {
-            val end = text.indexOf("*/", 2)
-            if (end >= 0) return text.substring(2, end).trimIndent().trim()
+        val text = child?.takeIf { it.node.elementType == T.TEXT }?.text ?: return null
+        // SQL text can include code before the documentation. Lex it rather than treating
+        // comment-looking content in strings, or an earlier macro's body, as documentation.
+        val lexer = SqlColorLexer(); lexer.start(text)
+        val tokens = mutableListOf<Pair<com.intellij.psi.tree.IElementType, String>>()
+        while (lexer.tokenType != null) {
+            val part = text.substring(lexer.tokenStart, lexer.tokenEnd)
+            if (part.isNotBlank()) tokens += lexer.tokenType!! to part
+            lexer.advance()
         }
-        if (text.startsWith("--")) return text.lineSequence().takeWhile { it.trimStart().startsWith("--") }
-            .joinToString("\n") { it.trimStart().removePrefix("--").trimStart() }
-        return null
+        if (tokens.lastOrNull()?.first != T.SQL_COMMENT) return null
+        val last = tokens.last().second
+        if (last.startsWith("/*")) return last.takeIf { it.endsWith("*/") }
+            ?.removePrefix("/*")?.removeSuffix("*/")?.trimIndent()?.trim()
+        return tokens.asReversed().takeWhile { it.first == T.SQL_COMMENT && it.second.startsWith("--") }
+            .asReversed().joinToString("\n") { it.second.removePrefix("--").trimStart() }
     }
     private fun escape(text: String) = StringUtil.escapeXmlEntities(text)
 }

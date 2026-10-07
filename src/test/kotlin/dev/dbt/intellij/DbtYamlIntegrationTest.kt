@@ -8,6 +8,10 @@ import com.jetbrains.jsonSchema.ide.JsonSchemaService
 import dev.dbt.intellij.config.DbtSchemaProviderFactory
 import dev.dbt.intellij.config.DbtYamlFiles
 import dev.dbt.intellij.config.DbtYamlIconProvider
+import com.intellij.psi.util.PsiTreeUtil
+import dev.dbt.intellij.psi.DbtVariable
+import dev.dbt.intellij.resources.DbtResourceNavigationHandler
+import org.jetbrains.yaml.psi.YAMLScalar
 
 class DbtYamlIntegrationTest : BasePlatformTestCase() {
     private fun open(path: String, text: String): com.intellij.psi.PsiFile {
@@ -66,5 +70,73 @@ class DbtYamlIntegrationTest : BasePlatformTestCase() {
         assertNull(DbtYamlFiles.schema(project, oldDefault.virtualFile))
         com.intellij.openapi.application.ApplicationManager.getApplication().runWriteAction { config.virtualFile.delete(this) }
         assertNull(DbtYamlFiles.schema(project, custom.virtualFile))
+    }
+
+    fun testSourceTableAndVersionedModelNavigationUsesLogicalNamesAndExactDefinitions() {
+        myFixture.addFileToProject("warehouse/dbt_project.yml", "name: warehouse\n")
+        val latest = myFixture.addFileToProject("warehouse/models/orders_v2.sql", "select 2")
+        val first = myFixture.addFileToProject("warehouse/models/legacy_orders.sql", "select 1")
+        val yaml = myFixture.addFileToProject("warehouse/models/resources.yml", """
+            version: 2
+            sources:
+              - name: raw
+                schema: physical_schema
+                tables:
+                  - name: orders
+                    identifier: physical_orders
+                    columns:
+                      - name: misleading
+            models:
+              - name: orders
+                latest_version: 2
+                versions:
+                  - v: 1
+                    defined_in: legacy_orders
+                  - v: 2
+              - name: orders_v2
+                description: Properties for the implementation file.
+        """.trimIndent())
+        open("warehouse/models/usage.sql", "{{ source('raw', 'orders') }} {{ ref('orders') }} {{ ref('orders', v=1) }} {{ source('raw','misleading') }}")
+        val calls = PsiTreeUtil.findChildrenOfType(myFixture.file, DbtVariable::class.java)
+        val targets = calls.map { DbtResourceNavigationHandler().getGotoDeclarationTargets(it.firstChild, it.textOffset, myFixture.editor).orEmpty() }
+        assertEquals(yaml.virtualFile, targets[0].single().containingFile.virtualFile)
+        assertEquals(yaml.text.indexOf("orders"), targets[0].single().textOffset)
+        assertEquals(latest.virtualFile, targets[1].single().containingFile.virtualFile)
+        assertEquals(first.virtualFile, targets[2].single().containingFile.virtualFile)
+        assertEmpty(targets[3].toList())
+        WriteCommandAction.runWriteCommandAction(project) {
+            PsiDocumentManager.getInstance(project).getDocument(yaml)!!.setText(yaml.text.replace("name: orders", "name: renamed"))
+        }
+        PsiDocumentManager.getInstance(project).commitAllDocuments()
+        assertNull(DbtResourceNavigationHandler().getGotoDeclarationTargets(calls.first().firstChild, calls.first().textOffset, myFixture.editor))
+    }
+
+    fun testExposureDependenciesAndWrappedYamlCallsKeepNativeYamlAndMapQuotedOffsets() {
+        myFixture.addFileToProject("warehouse/dbt_project.yml", "name: warehouse\n")
+        val model = myFixture.addFileToProject("warehouse/models/orders.sql", "select 1")
+        val source = myFixture.addFileToProject("warehouse/models/sources.yml", "sources: [{name: raw, tables: [{name: orders}]}]\nmetrics: [{name: revenue}]\n")
+        val file = open("warehouse/models/exposures.yml", """
+            exposures:
+              - name: dashboard
+                depends_on:
+                  - ref('orders')
+                  - 'source(''raw'', ''orders'')'
+                  - "{{ metric('revenue') }}"
+                description: "Ordinary prose ref('orders')"
+              - name: other
+                description: "{{ ref('orders') }}"
+              - name: literal
+                description: >-
+                  {{ "ref('orders')" }}
+                  {# ref('orders') #}
+        """.trimIndent())
+        assertEquals(Language.findLanguageByID("yaml"), file.language)
+        val scalars = PsiTreeUtil.findChildrenOfType(file, YAMLScalar::class.java)
+        val refs = scalars.flatMap { it.references.toList() }.filterIsInstance<dev.dbt.intellij.resources.DbtResourceReference>()
+        assertEquals(4, refs.size)
+        assertEquals(listOf(model.virtualFile, source.virtualFile, source.virtualFile, model.virtualFile), refs.map { it.resolve()!!.containingFile.virtualFile })
+        refs.forEach { assertTrue(it.element.text.substring(it.rangeInElement.startOffset, it.rangeInElement.endOffset).contains('(')) }
+        val quoted = refs[1]
+        assertEquals("source(''raw'', ''orders'')", quoted.element.text.substring(quoted.rangeInElement.startOffset, quoted.rangeInElement.endOffset))
     }
 }

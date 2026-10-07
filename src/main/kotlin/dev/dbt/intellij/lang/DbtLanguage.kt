@@ -55,6 +55,7 @@ object DbtTypes {
     val ACCESS = type("ACCESS")
     val CALL = type("CALL")
     val ARGUMENT = type("ARGUMENT")
+    val ARGUMENT_NAME = type("ARGUMENT_NAME")
     val VALUE = type("VALUE")
     val BINARY = type("BINARY")
     val UNARY = type("UNARY")

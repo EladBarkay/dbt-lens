@@ -223,7 +223,7 @@ class DbtParser : PsiParser {
                             while (!b.eof() && !boundary() && !isType(DbtTypes.RPAREN)) {
                                 val argument = b.mark(); val offset = b.currentOffset
                                 if (isName() && b.lookAhead(1) == DbtTypes.OPERATOR && tokenAfterIdentifierIsEquals()) {
-                                    b.advanceLexer(); b.advanceLexer()
+                                    name(DbtTypes.ARGUMENT_NAME); b.advanceLexer()
                                 }
                                 expression(0, depth + 1); argument.done(DbtTypes.ARGUMENT)
                                 if (!eat(DbtTypes.COMMA)) break
