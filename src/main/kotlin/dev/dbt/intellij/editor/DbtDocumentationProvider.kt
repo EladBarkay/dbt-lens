@@ -12,6 +12,7 @@ import dev.dbt.intellij.semantic.DbtTypeInference
 /** Static documentation only: never renders Jinja or executes a macro. */
 class DbtDocumentationProvider : AbstractDocumentationProvider() {
     override fun generateDoc(element: PsiElement?, originalElement: PsiElement?): String? {
+        dev.dbt.intellij.artifacts.ArtifactDocumentation.resource(element, originalElement)?.let { return it }
         val macro = macro(element) ?: macro(originalElement)
         if (macro == null) {
             val variable = listOfNotNull(originalElement, element).firstNotNullOfOrNull {
@@ -30,6 +31,7 @@ class DbtDocumentationProvider : AbstractDocumentationProvider() {
         val comment = leadingComment(macro)
         return "<div class='definition'><pre>${escape(signature)}</pre></div>" +
             (comment?.let { "<div class='content'><pre>${escape(it)}</pre></div>" } ?: "") +
+            dev.dbt.intellij.artifacts.ArtifactDocumentation.macro(macro).orEmpty() +
             "<div class='bottom'>${escape(macro.containingFile.name)}</div>"
     }
 

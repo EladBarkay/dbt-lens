@@ -4,7 +4,8 @@
     <vendor>dbt Lens contributors</vendor>
     <description><![CDATA[
         Jinja parsing, highlighting, folding, completion, and project macro navigation
-        in SQL templates. Native SQL integration is an experimental feasibility prototype.
+        in SQL templates, with saved dbt documentation, compiled SQL previews and resource lineage.
+        Native SQL integration is an experimental feasibility prototype.
     ]]></description>
     <depends>com.intellij.modules.platform</depends>
     <depends>com.intellij.modules.lang</depends>
@@ -16,6 +17,7 @@
         <extensionPoint qualifiedName="dev.dbt.jinja.dispatchConfiguration" interface="dev.dbt.intellij.dispatch.DispatchConfiguration" dynamic="true"/>
     </extensionPoints>
     <extensions defaultExtensionNs="com.intellij">
+        <toolWindow id="dbt Lens" anchor="right" icon="/icons/dbt.svg" factoryClass="dev.dbt.intellij.artifacts.DbtArtifactToolWindow"/>
         <fileType name="dbt Jinja" language="dbt Jinja" implementationClass="dev.dbt.intellij.lang.DbtFileType"
                   fieldName="INSTANCE" extensions="jinja;j2" patterns="*.dbt.sql"/>
         <lang.parserDefinition language="dbt Jinja" implementationClass="dev.dbt.intellij.lang.DbtParserDefinition"/>
