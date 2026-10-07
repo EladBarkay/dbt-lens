@@ -319,7 +319,8 @@ next hover after its background read finishes. Source navigation keeps working w
 
 Manifest schemas v8–v12 and catalog v1 are accepted. Missing, malformed, unsupported or mismatched
 artifacts receive a readable status. Reads are bounded at 64 MB per artifact and 100,000 resources;
-compiled previews are bounded at 2 MB. External/dynamic output paths and symlinks outside the project's
+saved compiled text is limited to 2 million characters and generated SQL files to 2 million bytes.
+External/dynamic output paths and symlinks outside the project's
 output directory are rejected. JSON parsing and preview loading run in the background. Native SQL
 coloring is used when available, but the detached viewer does not inherit source-file dialect mappings.
 
