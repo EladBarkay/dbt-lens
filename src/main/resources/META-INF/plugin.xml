@@ -4,7 +4,8 @@
     <vendor>dbt Lens contributors</vendor>
     <description><![CDATA[
         Jinja parsing, highlighting, folding, completion, and project macro navigation
-        in SQL templates, with saved dbt documentation, compiled SQL previews and resource lineage.
+        in SQL templates, with dbt documentation, compiled SQL previews, resource lineage,
+        and explicit local dbt manifest generation and compilation actions.
         Native SQL integration is an experimental feasibility prototype.
     ]]></description>
     <depends>com.intellij.modules.platform</depends>

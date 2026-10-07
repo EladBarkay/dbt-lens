@@ -15,7 +15,8 @@ data class ArtifactNode(val id: String, val kind: String, val name: String, val 
     val originalPath: String, val description: String, val columns: List<ArtifactColumn>,
     val materialized: String?, val relation: String?, val version: String?, val latestVersion: String?,
     val sourceName: String?, val rawCode: String?, val compiledCode: String?, val compiledPath: String?,
-    val parents: Set<String>, val arguments: List<ArtifactArgument> = emptyList(), val language: String? = null) {
+    val parents: Set<String>, val arguments: List<ArtifactArgument> = emptyList(), val language: String? = null, val fqn: List<String> = emptyList(),
+    val wasCompiled: Boolean = false) {
     val label get() = "$packageName.${sourceName?.let { "$it." }.orEmpty()}$name${version?.let { " v$it" }.orEmpty()} ($kind)"
 }
 data class ArtifactSnapshot(val nodes: Map<String, ArtifactNode> = emptyMap(), val generatedAt: String? = null,
@@ -63,7 +64,10 @@ object ArtifactReader {
             depends?.let { it.strings("nodes") + it.strings("macros") }.orEmpty(),
             record.array("arguments").take(200).mapNotNull { arg -> arg.takeIf { it.isJsonObject }?.asJsonObject?.let {
                 ArtifactArgument(it.string("name") ?: return@let null, it.string("description").orEmpty(), it.string("type"))
-            } }, record.string("language"))
+            } }, record.string("language"), record.array("fqn").take(100).mapNotNull {
+                it.takeIf { part -> part.isJsonPrimitive && part.asJsonPrimitive.isString }?.asString
+            }, record.get("compiled")?.takeIf { it.isJsonPrimitive && it.asJsonPrimitive.isBoolean }?.asBoolean
+                ?: (record.string("compiled_path") != null))
     }
     internal fun safeRelative(value: String): Boolean = value.isNotBlank() && '\\' !in value &&
         !value.startsWith('/') && !Regex("^[A-Za-z]:").containsMatchIn(value) && value.split('/').none { it in setOf("..", ".") }
@@ -95,7 +99,7 @@ object ArtifactReader {
         request.problem?.let { return ArtifactSnapshot(messages = listOf(it)) }
         val target = request.target ?: return ArtifactSnapshot(messages = listOf("Artifact directory is unavailable"))
         val manifest = target.resolve("manifest.json")
-        if (!Files.isRegularFile(manifest)) return ArtifactSnapshot(messages = listOf("No manifest.json in $target. Generate it with dbt outside the plugin."))
+        if (!Files.isRegularFile(manifest)) return ArtifactSnapshot(messages = listOf("No manifest.json in $target. Click Generate manifest to create it."))
         try {
             require(target.toRealPath().startsWith(request.root.toRealPath()) && manifest.toRealPath().startsWith(target.toRealPath())) {
                 "Artifact files must remain inside the dbt project's output directory"
@@ -191,6 +195,8 @@ object ArtifactReader {
     fun compiled(request: ArtifactRequest, node: ArtifactNode): String? {
         if (node.kind == "macro" || node.language == "python" || node.originalPath.endsWith(".py")) return null // Definitions/Python are not SQL output.
         node.compiledCode?.let { return it }
+        // parse (and partial compile) leave old files on disk for uncompiled nodes.
+        if (!node.wasCompiled) return null
         val target = request.target ?: return null
         val explicit = node.compiledPath?.takeIf(::safeRelative)?.let { request.root.resolve(it).normalize() }
         val candidates = listOfNotNull(explicit, target.resolve("compiled/${node.packageName}/${node.originalPath}").normalize())

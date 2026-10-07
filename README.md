@@ -47,8 +47,10 @@ dbt project-intelligence release.
   read chooses its latest known definition. Branch-dependent definitions remain multiple candidates.
 - Builtin/member hover documentation and special class highlighting for `api.Relation` and `api.Column`.
 - Optional saved-artifact support: compiled SQL preview, resource/macro documentation and a focused
-  upstream/downstream lineage view in the **dbt Lens** tool window. No dbt command or warehouse query
-  is run by the plugin. See the artifact workflow below.
+  upstream/downstream lineage view in the **dbt Lens** tool window.
+- Explicit local CLI actions to generate a manifest, compile the current SQL resource or project, and
+  compile a macro invocation with arguments. Settings select the executable, profiles, target and
+  optional environment file; progress, cancellation and command output are shown in the tool window.
 - Native YAML completion/validation and dbt icons for project/profile/package/dependency/selector files
   and resource property YAML. YAML retains its native file type and parser.
 - Go to Declaration and Find Usages for static calls to top-level macros in the current dbt project and installed dependencies,
@@ -103,7 +105,7 @@ independently of file type; semantic assistance is scoped to the detected dbt ro
 The plugin also associates `*.dbt.sql`, `*.jinja` and `*.j2`. Open
 [examples/local-macros.dbt.sql](examples/local-macros.dbt.sql) to try completion, navigation and usages.
 For a file without a detected dbt root, use **Override File Type** and
-choose **dbt Jinja**. After updating to dbt Lens 0.1.11, restart the IDE and reopen the model to refresh its
+choose **dbt Jinja**. After updating to dbt Lens 0.1.12, restart the IDE and reopen the model to refresh its
 existing language selection.
 
 The plugin keeps its original `dev.dbt.jinja` ID so dbt Lens upgrades existing installations.
@@ -187,7 +189,8 @@ Simultaneous native SQL assistance and complete Jinja editing remain a separate 
 Requires a **JDK 21** and network access for the first build. The Gradle wrapper is pinned to 9.0.0
 with a distribution checksum; the Kotlin compiler is 2.3.21 (language/API level 2.2, Java 21 output)
 and the IntelliJ Platform Gradle plugin is 2.19.0.
-The default SDK is IntelliJ IDEA 2025.3.3. No Python interpreter or dbt installation is needed.
+The default SDK is IntelliJ IDEA 2025.3.3. No dbt installation is needed for the IDE suites;
+the CLI process fixtures use `/usr/bin/python3` on Unix hosts. Packaging does not require Python or dbt.
 The build resolves its matching JetBrains Runtime automatically, unless a local runtime is supplied.
 
 ```sh
@@ -198,7 +201,7 @@ For binary compatibility and API checks against the same SDK, run `./gradlew ver
 Use `-PverifierOffline=true` to restrict the verifier to already downloaded dependencies; the validation
 record describes the limits of the offline result.
 
-The installation ZIP appears at `build/distributions/dbt-lens-0.1.11.zip`. Use **Settings → Plugins → Install Plugin
+The installation ZIP appears at `build/distributions/dbt-lens-0.1.12.zip`. Use **Settings → Plugins → Install Plugin
 from Disk** to install it in a compatible IDE, or `./gradlew runIde` to start a separate development IDE.
 The compatibility range in the descriptor is builds 253–262, including PyCharm 2026.2. Only versions
 actually exercised in [docs/feasibility.md](docs/feasibility.md) are validated; this development build is
@@ -254,7 +257,9 @@ the project. Installed dependency files use the host project's output. A selecto
 multiple macros or YAML resources defined in the same file.
 
 - **Compiled SQL** shows saved `compiled_code`/`compiled_sql`, with a generated-file fallback. The viewer
-  is read-only and never changes source or output files. Resources without compiled output receive a
+  uses that fallback only when the manifest identifies the resource as compiled, avoiding old files
+  left behind by parse or a partial compile.
+  The viewer is read-only and never changes source or output files. Resources without compiled output receive a
   clear message. Macro definitions and Python model code are not displayed as compiled SQL.
 - **Documentation** uses the IDE font/theme with wrapped text, labeled column tables and one test per
   list item. It adds saved descriptions, documented macro arguments, columns/types, physical relation
@@ -265,12 +270,24 @@ multiple macros or YAML resources defined in the same file.
   both, at depth 1–3. Click a node to open its local definition. The graph is capped at 80 resources;
   this is resource lineage, not column lineage.
 
-Generate or update artifacts using your normal dbt workflow outside the plugin, then choose
-**Refresh saved output**. `dbt parse` can supply a manifest without compiled SQL; existing output from
-`dbt compile` supplies compiled resources, and `dbt docs generate` can supply a catalog. Compilation
-may execute introspective warehouse queries through macros; it is not assumed to be an offline operation.
-A macro needs arguments and a dbt context to produce output. Automatic CLI compilation, an argument-aware
-macro workflow and live data preview are deferred.
+Use **Generate manifest** to run `dbt parse`, **Compile current** for the selected SQL resource, or
+**Compile project** for the whole project. Completion refreshes the artifact panel automatically.
+**Command output** shows readable dbt logs; **Cancel** stops the running process. Only one command runs
+per IDE project. Commands save pending source/configuration edits within the selected dbt root first.
+Opening files, indexing and hover documentation never start dbt commands.
+The actions follow the official [parse](https://docs.getdbt.com/reference/commands/parse) and
+[compile](https://docs.getdbt.com/reference/commands/compile) workflows.
+
+For a macro file, **Compile current** opens a call dialog. Choose a macro and supply its invocation and
+arguments, for example `{{ elementary.my_macro('orders') }}`. This uses `dbt compile --inline`; its
+result appears in the macro's Compiled SQL tab. Macros that emit SQL and perform introspective queries
+are supported through dbt itself. Compilation may query the selected warehouse. It does not run a model
+or invoke `dbt run-operation`; macros that primarily perform operations may produce no useful SQL.
+
+`dbt parse` generates metadata without compiling resources; it can replace previously compiled output.
+Compile again when you need a SQL preview. Existing output from external dbt commands is still accepted
+with **Refresh saved output**. Run `dbt docs generate` externally for optional catalog data; catalog
+creation, dependency installation, model execution and live data preview are not implemented.
 
 Saved timestamps are displayed. SQL/Jinja source differences, including unsaved edits, receive a
 staleness warning. Other changes—configuration, dependencies or warehouse state—can also invalidate
@@ -284,17 +301,29 @@ compiled previews are bounded at 2 MB. External/dynamic output paths and symlink
 output directory are rejected. JSON parsing and preview loading run in the background. Native SQL
 coloring is used when available, but the detached viewer does not inherit source-file dialect mappings.
 
-No executable or credential setup is needed for this workflow. A later CLI integration will need the
-dbt executable/environment, profiles location and selected target. For example, a project's `profile`
-in `dbt_project.yml` selects a profile in `profiles.yml`, whose `dev`/`prod` outputs can connect to
-different warehouses. These settings matter when executing dbt, not when reading existing JSON.
+Reading saved JSON needs no dbt installation. To execute commands, configure **Settings → dbt Lens**:
+
+- **dbt executable**: blank searches `.venv`/`venv` in the selected project, then the IDE's PATH. An explicit
+  executable path supports other environments. The plugin does not install dbt or activate shell scripts.
+- **Profiles directory**, **Profile override**, and **Target** are optional. Blank values use dbt defaults.
+  For example, the project profile selects a `profiles.yml` entry whose `dev`/`prod` outputs may connect
+  to different warehouses. Settings apply to the IDE project; relative paths resolve from each dbt root.
+- **Environment file**: optional UTF-8 literal `NAME=value` entries, with optional `export`, quotes and
+  comments. Values supplement the IDE environment. Shell commands, variable expansion, escape processing
+  and multiline values are not evaluated. The plugin saves only the file path, not its contents.
+
+The executable runs locally with arguments passed directly, without a shell. Core **1.5+** supplies
+inline compilation; output remains subject to the supported manifest schema range. Select a dbt version
+compatible with your adapters. Remote/WSL execution and interactive authentication prompts are not
+supported by this workflow; configure the local environment before running commands. The command log
+shows dbt's own messages, which may include details printed by your project macros.
 
 ## Deferred work
 
 Complete configuration-aware resource discovery; complete scope-aware resolution; resource completion;
-parameter information; argument/resource inspections; safe rename; live compilation and dbt execution.
-Rename is explicitly rejected until the project-wide reference model exists. No project code or dbt command
-is executed to provide editor features.
+parameter information; argument/resource inspections; safe rename; automatic live compilation and broader dbt execution actions.
+Rename is explicitly rejected until the project-wide reference model exists. Editor assistance does not
+execute project code or dbt commands; CLI actions are explicit.
 
 See [docs/feasibility.md](docs/feasibility.md) for the integration gate and the next milestones.
 
@@ -303,7 +332,7 @@ See [docs/feasibility.md](docs/feasibility.md) for the integration gate and the 
 `main` initially contains repository basics. The implementation is reviewed as stacked PRs:
 `0.1.0` → `main`, `0.1.1` → `0.1.0`, `0.1.2` → `0.1.1`, `0.1.3` → `0.1.2`, `0.1.4` → `0.1.3`,
 `0.1.5` → `0.1.4`, `0.1.6` → `0.1.5`, `0.1.7` → `0.1.6`, `0.1.8` → `0.1.7`, `0.1.9` → `0.1.8`,
-`0.1.10` → `0.1.9`, and `0.1.11` → `0.1.10`.
+`0.1.10` → `0.1.9`, `0.1.11` → `0.1.10`, and `0.1.12` → `0.1.11`.
 Review each PR against its immediate predecessor. Earlier development versions retain their original
 names and compatibility ranges; dbt Lens branding is introduced in 0.1.4.
 
