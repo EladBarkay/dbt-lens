@@ -39,7 +39,7 @@ class DbtArtifactPanel(private val project: Project) : JPanel(BorderLayout()), D
     private val nodes = JComboBox<ArtifactNode>()
     private val direction = JComboBox(LineageDirection.entries.toTypedArray())
     private val depth = JSpinner(SpinnerNumberModel(1, 1, 3, 1))
-    private val docs = JEditorPane("text/html", "").apply { isEditable = false }
+    private val docs = ArtifactDocumentationPane()
     private val editor: Editor = EditorFactory.getInstance().createEditor(EditorFactory.getInstance().createDocument(""), project,
         FileTypeManager.getInstance().getFileTypeByExtension("sql"), true)
     private val graph = LineageGraph(::navigate)
@@ -56,6 +56,7 @@ class DbtArtifactPanel(private val project: Project) : JPanel(BorderLayout()), D
     internal fun selectResource(index: Int) { nodes.selectedIndex = index }
 
     init {
+        com.intellij.openapi.util.Disposer.register(this, docs)
         nodes.renderer = DefaultListCellRenderer().let { base -> ListCellRenderer { list, value, index, selected, focus ->
             base.getListCellRendererComponent(list, value?.label.orEmpty(), index, selected, focus)
         } }
@@ -128,7 +129,7 @@ class DbtArtifactPanel(private val project: Project) : JPanel(BorderLayout()), D
             val code = runCatching { ArtifactReader.compiled(context, node) }.getOrNull()
             val info = ReadAction.compute<Pair<String, Boolean>, RuntimeException> {
                 val psi = PsiManager.getInstance(project).findFile(active)
-                if (psi == null) "" to false else ArtifactDocumentation.body(psi, node, saved) to service.changed(psi, node)
+                if (psi == null) "" to false else ArtifactDocumentation.body(psi, node, saved, showStaleness = false) to service.changed(psi, node)
             }
             ApplicationManager.getApplication().invokeLater {
                 if (disposed || project.isDisposed || ticket != rendering) return@invokeLater

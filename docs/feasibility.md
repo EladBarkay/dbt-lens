@@ -359,6 +359,24 @@ API usages** from ToolWindowFactory default methods. The SDK-matched JetBrains R
 automatically unless an explicit local runtime is supplied; this avoids the indexing-process startup
 failure observed with the temporary Temurin 21 runtime. The feature PR targets `0.1.9`.
 
+Version **0.1.11** replaces the artifact tab's unstyled Swing HTML pane with JetBrains' native
+`JBHtmlPane`. The local renderer uses regular IDE label-font text, native theme colors, scaled padding,
+compact paragraphs, bold section headings and forced word wrapping. It is registered under the panel's
+disposable. The shared HTML formatter adds labeled column tables, omits the type column when no types
+are known, and displays tests as individual list items. The artifact tab keeps its staleness warning
+in the status area; hover documentation retains the warning in its content.
+
+The rendering regression uses the actual component with long test identifiers at **360 px** and
+**800 px**, checks the regular IDE font and minimum width, and optionally exports native-component PNGs
+when `DBT_DOCS_RENDER_DIR` is supplied. Those PNGs were inspected on both SDKs during development.
+The suites pass **102 SQL-enabled tests** and **95 tests** on the exact PyCharm SDK with commercial/database
+modules disabled. Reports are saved under `build/reports/tests/0111-*`. Packaging/structure checks pass;
+the final package reuses the already-generated settings index because no configurable changed.
+Plugin Verifier **1.410** reports **Compatible** against **IU-253.31033.145** and **PY-262.10968.92**,
+subject to the existing merged-module/optional-dependency limits. It reports **23 experimental API
+usages**, including the public native HTML pane APIs, and **4/6 deprecated usages** respectively.
+The feature PR targets `0.1.10`. No CLI generation or compilation behavior changes in this version.
+
 No interactive user-IDE UI qualification, PostgreSQL/Snowflake assistance qualification,
 IntelliJ 2026.1 compatibility run or performance benchmark has been performed. Parser fixtures are
 editing correctness checks, not runtime/dbt equivalence tests. The project-configuration checker

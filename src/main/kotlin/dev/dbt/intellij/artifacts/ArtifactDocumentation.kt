@@ -27,28 +27,40 @@ object ArtifactDocumentation {
         val node = service.forFile(macro, snapshot).singleOrNull { it.kind == "macro" && it.name == macro.name } ?: return null
         return body(macro, node, snapshot)
     }
-    fun body(source: PsiElement, node: ArtifactNode, snapshot: ArtifactSnapshot): String {
+    fun body(source: PsiElement, node: ArtifactNode, snapshot: ArtifactSnapshot, showStaleness: Boolean = true): String {
         val service = source.project.getService(DbtArtifacts::class.java)
         val changed = service.changed(source, node)
         return buildString {
             append("<div class='content'>")
-            if (changed) append("<p><b>Source has changed since this artifact. Metadata and output may be outdated.</b></p>")
+            if (showStaleness && changed) append("<p><b>Source has changed since this artifact. Metadata and output may be outdated.</b></p>")
             if (node.description.isNotBlank()) append("<p>${escape(node.description).replace("\n", "<br>")}</p>")
             node.materialized?.let { append("<p>Materialization: ${escape(it)}</p>") }
-            node.relation?.let { append("<p>Relation: ${escape(it)}</p>") }
+            node.relation?.let { append("<p>Relation: <code>${escape(it)}</code></p>") }
             if (node.arguments.isNotEmpty()) {
-                append("<p><b>Documented arguments</b></p><ul>")
+                append("<h3>Documented arguments</h3><ul>")
                 node.arguments.forEach { append("<li>${escape(it.name)}${it.type?.let { t -> ": ${escape(t)}" }.orEmpty()} — ${escape(it.description)}</li>") }
                 append("</ul>")
             }
             if (node.columns.isNotEmpty()) {
-                append("<p><b>Columns</b></p><table>")
-                node.columns.take(100).forEach { append("<tr><td>${escape(it.name)}</td><td>${escape(it.type.orEmpty())}</td><td>${escape(it.description)}</td></tr>") }
+                val hasTypes = node.columns.any { !it.type.isNullOrBlank() }
+                append("<h3>Columns</h3><table><tr><th width='${if (hasTypes) 30 else 35}%'>Name</th>")
+                if (hasTypes) append("<th width='20%'>Type</th>")
+                append("<th>Description</th></tr>")
+                node.columns.take(100).forEach {
+                    append("<tr><td><code>${escape(it.name)}</code></td>")
+                    if (hasTypes) append("<td>${escape(it.type.orEmpty())}</td>")
+                    append("<td>${escape(it.description).replace("\n", "<br>")}</td></tr>")
+                }
                 append("</table>")
                 if (node.columns.size > 100) append("<p>Showing the first 100 columns.</p>")
             }
             val tests = snapshot.children[node.id].orEmpty().mapNotNull { snapshot.nodes[it] }.filter { it.kind in setOf("test", "unit_test") }
-            if (tests.isNotEmpty()) append("<p>Tests: ${escape(tests.take(30).joinToString { it.name })}</p>")
+            if (tests.isNotEmpty()) {
+                append("<h3>Tests</h3><ul>")
+                tests.take(30).forEach { append("<li>${escape(it.name)}</li>") }
+                append("</ul>")
+                if (tests.size > 30) append("<p>Showing the first 30 tests.</p>")
+            }
             append("</div><div class='bottom'>Saved dbt metadata${snapshot.generatedAt?.let { " · ${escape(it)}" }.orEmpty()}")
             snapshot.catalogGeneratedAt?.let { append("<br>Catalog: ${escape(it)}") }
             snapshot.messages.forEach { append("<br>${escape(it)}") }
