@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.0.0 — Reviewed release
+
+- Fix literal configuration parsing for quoted keys, tabs, comments and quoted path lists;
+  reject duplicate, dynamic and ambiguous configuration instead of guessing.
+- Enforce file limits during reads, parse artifact JSON strictly and reject malformed paths
+  and duplicate lineage entries. Cancel obsolete/disposed artifact work.
+- Keep Compile current precise: incomplete or ambiguous saved identities require manifest
+  regeneration or Compile project, rather than selecting every matching filename.
+- Share declaration scanning and generated-directory rules; apply pinned Kotlin formatting.
+- Add minimal-host and free-PyCharm CI, binary compatibility verification, pinned Actions,
+  dependency updates, checksummed draft releases, Apache-2.0 licensing and maintenance guidance.
+- Upgrade the checked Gradle wrapper to support Java 25 and explicitly provide both verification toolchains.
+
 ## 0.2.4 — Local dbt compilation
 
 Consolidates original PRs #14.

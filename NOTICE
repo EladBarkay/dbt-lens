@@ -1,0 +1,10 @@
+dbt Lens
+Copyright 2026 dbt Lens contributors
+
+Bundled dbt JSON schemas originate from dbt Labs' dbt-jsonschema project,
+commit 6a401244651d3b5e0fd2f7cfcfb120187118edb4, and retain their Apache-2.0
+license at src/main/resources/schemas/LICENSE-dbt-jsonschema.txt.
+
+The dbt name and supplied dbt marks belong to their respective owners.
+The project license does not grant rights to those trademarks.
+dbt Lens is an independent project and is not endorsed by dbt Labs or JetBrains.

@@ -430,14 +430,78 @@ warns about the deliberately bounded `until-build` range. Earlier runs with an e
 Temurin test runtime also warn about using a non-JBR runtime. These do not change the test results and
 remain release-qualification items.
 
+## 1.0.0 review and qualification
+
+The release review covers the original main through 0.1.12, the cumulative 0.2.0–0.2.4
+checkpoints and the reviewed 1.0.0 changes. See [release-review.md](release-review.md) for
+the code, architecture, product/business, maintenance, security and CI/CD assessment, fixed
+findings and repeated-review record. This section supersedes historical release claims above
+where behavior or qualification changed.
+
+The final source passes the following real IDE fixture configurations on macOS:
+
+| Host configuration | SDK | Tests | Failures/errors/skipped |
+| --- | --- | --- | --- |
+| SQL, TextMate and YAML enabled | IU-253.31033.145 | 124 | 0/0/0 |
+| SQL disabled; TextMate and YAML enabled | IU-253.31033.145 | 117 | 0/0/0 |
+| SQL, TextMate, JSON/YAML and commercial modules disabled | IU-253.31033.145 | 106 | 0/0/0 |
+| Installed PyCharm with commercial/database modules disabled | PY-262.10968.92 | 117 | 0/0/0 |
+
+Every configuration also passes the formatter, project-configuration and plugin-structure
+checks. Packaging passes against both SDKs; the native settings search index is regenerated.
+The ZIP contains the selected Apache-2.0 LICENSE/NOTICE and unchanged upstream schema license.
+The original plugin ID is retained, all plugin classes use Java 21 bytecode (class version 65),
+and the descriptor has `since-build=253` without an arbitrary upper-build ceiling. Compatibility
+claims still cover the exact tested versions, not every installable future IDE.
+
+The Gradle wrapper is upgraded to **9.3.0**, with both its distribution and regenerated wrapper
+binary checked against Gradle's official SHA-256 values. This version supports Java 25 and is
+within Kotlin **2.3.21**'s supported Gradle range. Java 21 compiles the baseline; Java 25 runs
+the PyCharm SDK. Verification with a Java 25 Gradle runtime additionally requires a discoverable
+Java 21 compilation toolchain. CI installs both and supplies their installation paths explicitly.
+Kotlin language/API levels remain 2.2 and the plugin bytecode target remains 21.
+
+Plugin Verifier **1.410** reports **Compatible** for both exact SDKs. Each reports **4 deprecated**
+and **23 experimental** API usages. The deprecated usages are Kotlin-generated delegations to
+ToolWindowFactory defaults; the previous direct deprecated ReadAction calls are removed.
+Experimental usages include the native documentation pane and factory defaults. These remain
+watchpoints for future IDE updates, not compatibility errors on the tested versions.
+Gradle also emits a Gradle 10 deprecation notice during verification; a future build-tool
+major upgrade needs its own plugin/deprecation qualification rather than an unchecked wrapper bump.
+The local run is offline: it does not fetch missing optional dependency variants, and merged
+SDK modules can produce layout warnings. The minimal/free-host runtime suites complement that
+binary result. CI runs the online verifier against both pinned IDE distributions.
+
+Local 1.0.0 reports are retained under `/private/tmp/dbt-lens-100-validation/*-release`, with
+logs named `/private/tmp/dbt-lens-100-release-*.log`; those machine-local files are not shipped.
+GitHub CI retains per-configuration test reports, binary verification reports and the baseline
+ZIP/checksum. Both workflow files pass actionlint **1.7.12**; XML descriptors and JSON schemas
+parse, and all bundled schema references remain internal/offline. The tag-to-draft workflow
+is statically checked; its first complete release run requires the workflow to be merged and
+a matching version tag on main. No 1.0.0 release tag or Marketplace publication is created by
+the review PR.
+
+New regressions cover quoted/literal configuration, malformed JSON/paths/lineage, byte limits
+including file growth, rapid selection/disposal and ambiguous/malformed saved identities.
+Compile current no longer falls back to a basename or shortens malformed FQN metadata into a
+different selector. Missing identity requires manifest regeneration or explicit project compile.
+Lineage bounds include examined missing IDs, and artifact/background work checks cancellation
+during reading and reverse-index construction.
+
+The prior dbt Core/DuckDB smoke remains historical evidence. No new interactive user-IDE,
+large-project benchmark, Windows, Fusion or external warehouse-adapter qualification is claimed.
+The current private repository plan does not allow branch protection; checks-before-merge is
+a documented maintainer requirement rather than an enforced repository rule.
+
 ## Next independently testable milestones
 
 1. Complete statement and expression grammar, lexical scope and editing recovery corpus. Add YAML value
    injection without changing the host YAML structure. Do not publish runtime-equivalence claims.
-2. Extend marker-based discovery with configuration-aware resource classification and source indexes. Resolve ordinary/package macros and literal
-   `ref`/`source` through one provenance-aware resolver. Test no-manifest and unsaved-source behavior.
-3. Add completion, documentation, parameter information and Find Usages against that shared resolver.
-   Dynamic references remain unknown. Add rename only after collision and ambiguity tests exist.
+2. Extend existing resource discovery with configured macro-path filtering and custom generated-output
+   exclusions, then qualify project-scale cache/index behavior and unsaved-source invalidation.
+3. Add resource completion, parameter information and argument/resource inspections against the
+   existing resolvers. Dynamic references remain unknown. Add rename only after a project-wide
+   reference model and collision/ambiguity tests exist.
 4. Iterate on typed SQL holes and diagnostics policy; qualify dialects and editions using actual SDKs.
    Retain lexical fallback if the gate remains incomplete.
 5. Extend artifact enrichment with configuration/dependency freshness checks, resource inspections and
@@ -450,5 +514,5 @@ scope results to the nearest dbt root. Installed dependencies use their own root
 the cached fallback catalog described above. Same-file unqualified declarations take precedence.
 Literal package names and install paths are supported; complex YAML/Jinja expressions are not evaluated.
 Discoverable bindings conservatively suppress macro resolution. Completion/resolution pause while the
-IDE indexes. Full lexical scopes, configured macro-path filtering, runtime dispatch and performance
+IDE indexes. Complete Jinja import/runtime scope semantics, configured macro-path filtering, runtime dispatch and performance
 qualification remain future milestones.
