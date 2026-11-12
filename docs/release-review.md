@@ -48,7 +48,8 @@ compiling unrelated resources. Macro definitions and compiled invocations have d
 
 Apache-2.0 is the owner's selected project license. The package includes LICENSE and NOTICE,
 preserves the upstream schema license and identifies dbt Lens as an independent project.
-The original plugin ID remains stable for upgrades. The repository has a buildable ZIP and
+The plugin ID changes to `eladbarkay.dev.dbtlens` for Marketplace publication, so earlier `dev.dbt.jinja`
+installations must be removed rather than upgraded. The repository has a buildable ZIP and
 checked draft-release path; Marketplace distribution, signing, monetization and an adoption
 strategy have not been established. No demand, competitive advantage or revenue claim is
 inferred from passing tests. The practical next product evidence is feedback from users of
@@ -116,7 +117,7 @@ than relying on the first successful pass.
 
 The wrapper is upgraded to Gradle 9.3.0, within the pinned compiler's supported range and
 with official Java 25 support. Its distribution has a checksum; compiler, platform plugin, formatter and IDE SDKs
-are pinned. GitHub Actions use immutable commit SHAs, checkout does not persist credentials,
+are pinned. GitHub Actions reference release tags (updated by Dependabot), checkout does not persist credentials,
 and ordinary checks have read-only repository permissions. Weekly grouped dependency PRs
 must pass the same matrix. Tests use isolated process fixtures instead of user credentials.
 

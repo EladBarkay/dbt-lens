@@ -124,7 +124,8 @@ For a file without a detected dbt root, use **Override File Type** and
 choose **dbt Jinja**. After updating to dbt Lens 1.0.0, restart the IDE and reopen the model to refresh its
 existing language selection.
 
-The plugin keeps its original `dev.dbt.jinja` ID so dbt Lens upgrades existing installations.
+The plugin ID is `eladbarkay.dev.dbtlens`. Builds before the Marketplace release used `dev.dbt.jinja`;
+uninstall that version before installing this one, because the IDE treats them as separate plugins.
 Its internal language and file-type name remains **dbt Jinja**.
 
 ## YAML assistance

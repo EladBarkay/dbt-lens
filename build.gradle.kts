@@ -84,7 +84,7 @@ fun changeNotesHtml(changelog: String): String {
 
 intellijPlatform {
     pluginConfiguration {
-        name = "dbt Lens"
+        name = "DBT Lens"
         ideaVersion { sinceBuild = "253" }
         changeNotes =
             providers.fileContents(layout.projectDirectory.file("CHANGELOG.md")).asText.map {
