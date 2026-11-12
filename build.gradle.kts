@@ -52,20 +52,15 @@ java {
     targetCompatibility = JavaVersion.VERSION_21
 }
 
-// The platform plugin otherwise selects the SDK runtime's bytecode target (25 on PyCharm 262).
 tasks.withType<KotlinCompile>().configureEach {
     compilerOptions {
         jvmTarget = JvmTarget.JVM_21
         languageVersion = KotlinVersion.KOTLIN_2_2
         apiVersion = KotlinVersion.KOTLIN_2_2
-        // Avoid compatibility bridges that re-declare every platform interface default method,
-        // which the verifier reports as overrides of deprecated/experimental API.
         jvmDefault = JvmDefaultMode.NO_COMPATIBILITY
     }
 }
 
-// Marketplace change notes are the CHANGELOG.md section for the packaged version. An object keeps
-// the script instance out of the configuration cache.
 object ChangeNotes {
     fun html(changelog: String, version: String): String {
         val section =
@@ -82,6 +77,7 @@ object ChangeNotes {
                 .replace("<", "&lt;")
                 .replace(">", "&gt;")
                 .replace(Regex("`([^`]+)`"), "<code>$1</code>")
+                .replace(Regex("\\*\\*([^*]+)\\*\\*"), "<b>$1</b>")
         return section.trim().split(Regex("\n\\s*\n")).joinToString("\n") { block ->
             if (block.startsWith("- "))
                 block.removePrefix("- ").split("\n- ").joinToString("", "<ul>", "</ul>") {
@@ -102,7 +98,6 @@ intellijPlatform {
                 ChangeNotes.html(it, pluginVersion)
             }
     }
-    // Credentials are supplied only to the Marketplace workflow; see CONTRIBUTING.md.
     signing {
         certificateChain = providers.environmentVariable("CERTIFICATE_CHAIN")
         privateKey = providers.environmentVariable("PRIVATE_KEY")
@@ -130,7 +125,6 @@ tasks.withType<AbstractArchiveTask>().configureEach {
     isReproducibleFileOrder = true
 }
 
-// Publishing signs the ZIP checked by the release workflow instead of rebuilding it.
 tasks.signPlugin {
     providers.gradleProperty("releaseArchive").orNull?.let { archiveFile = file(it) }
 }
@@ -154,7 +148,6 @@ tasks.prepareTestSandbox {
         disabledPlugins.add("org.jetbrains.plugins.yaml")
         disabledPlugins.add("com.intellij.modules.json")
     }
-    // Omitting a test dependency does not disable plugins bundled in the target IDE.
     if (providers.gradleProperty("withSqlTests").orNull != "true")
         disabledPlugins.add("com.intellij.database")
     if (providers.gradleProperty("withTextmateTests").orNull == "false")

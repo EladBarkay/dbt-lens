@@ -1,4 +1,8 @@
-# 1.0.0 project review
+# 1.0.0 release review
+
+> [!NOTE]
+> Internal review record for the 1.0.0 release, kept for maintainers. Release notes for users are in
+> [CHANGELOG.md](../CHANGELOG.md).
 
 This review covers the complete repository from the original main commit `18596be` through
 the final 0.1.12 implementation `e2d9fd0`, the five consolidated 0.2.x checkpoints, and the
