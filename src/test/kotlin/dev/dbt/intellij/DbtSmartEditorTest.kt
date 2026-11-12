@@ -1,9 +1,9 @@
 package dev.dbt.intellij
 
-import com.intellij.codeInsight.documentation.DocumentationManager
 import com.intellij.codeInsight.highlighting.HighlightUsagesHandler
 import com.intellij.codeInsight.lookup.Lookup
 import com.intellij.codeInsight.template.TemplateManager
+import com.intellij.lang.LanguageDocumentation
 import com.intellij.openapi.actionSystem.IdeActions
 import com.intellij.psi.PsiErrorElement
 import com.intellij.psi.search.searches.ReferencesSearch
@@ -304,12 +304,14 @@ class DbtSmartEditorTest : BasePlatformTestCase() {
     fun testBuiltinHoverAndApiClassColors() {
         open("{{ api.Relation.create(identifier='x') }} {{ data | map(attribute='name') }}")
         val create = variables().single { it.text == "create" }
-        val docs = DocumentationManager.getProviderFromElement(create).generateDoc(create, create)!!
+        val docs =
+            LanguageDocumentation.INSTANCE.forLanguage(create.language)
+                .generateDoc(create, create)!!
         assertTrue(docs.contains("create(database=None, schema=None, identifier=None, type=None)"))
         assertTrue(docs.contains("reference/dbt-classes"))
         val map = variables().single { it.text == "map" }
         assertTrue(
-            DocumentationManager.getProviderFromElement(map)
+            LanguageDocumentation.INSTANCE.forLanguage(map.language)
                 .generateDoc(map, map)!!
                 .contains("attribute=None"),
         )

@@ -1,11 +1,12 @@
 import org.jetbrains.intellij.platform.gradle.TestFrameworkType
+import org.jetbrains.kotlin.gradle.dsl.JvmDefaultMode
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     kotlin("jvm") version "2.4.21"
-    id("org.jetbrains.intellij.platform") version "2.20.0"
+    id("org.jetbrains.intellij.platform") version "2.20.1"
     id("com.ncorti.ktfmt.gradle") version "0.28.0"
 }
 
@@ -51,34 +52,39 @@ java {
     targetCompatibility = JavaVersion.VERSION_21
 }
 
-// The platform plugin otherwise selects the SDK runtime's bytecode target (25 on PyCharm 262).
 tasks.withType<KotlinCompile>().configureEach {
     compilerOptions {
         jvmTarget = JvmTarget.JVM_21
         languageVersion = KotlinVersion.KOTLIN_2_2
         apiVersion = KotlinVersion.KOTLIN_2_2
+        jvmDefault = JvmDefaultMode.NO_COMPATIBILITY
     }
 }
 
-// Marketplace change notes are the CHANGELOG.md section for the packaged version.
-fun changeNotesHtml(changelog: String): String {
-    val section =
-        changelog.substringAfter("\n## $version ", "").substringAfter('\n').substringBefore("\n## ")
-    require(section.isNotBlank()) { "CHANGELOG.md has no section for $version" }
-    fun text(markdown: String) =
-        markdown
-            .replace(Regex("\\s+"), " ")
-            .trim()
-            .replace("&", "&amp;")
-            .replace("<", "&lt;")
-            .replace(">", "&gt;")
-            .replace(Regex("`([^`]+)`"), "<code>$1</code>")
-    return section.trim().split(Regex("\n\\s*\n")).joinToString("\n") { block ->
-        if (block.startsWith("- "))
-            block.removePrefix("- ").split("\n- ").joinToString("", "<ul>", "</ul>") {
-                "<li>${text(it)}</li>"
-            }
-        else "<p>${text(block)}</p>"
+object ChangeNotes {
+    fun html(changelog: String, version: String): String {
+        val section =
+            changelog
+                .substringAfter("\n## $version ", "")
+                .substringAfter('\n')
+                .substringBefore("\n## ")
+        require(section.isNotBlank()) { "CHANGELOG.md has no section for $version" }
+        fun text(markdown: String) =
+            markdown
+                .replace(Regex("\\s+"), " ")
+                .trim()
+                .replace("&", "&amp;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;")
+                .replace(Regex("`([^`]+)`"), "<code>$1</code>")
+                .replace(Regex("\\*\\*([^*]+)\\*\\*"), "<b>$1</b>")
+        return section.trim().split(Regex("\n\\s*\n")).joinToString("\n") { block ->
+            if (block.startsWith("- "))
+                block.removePrefix("- ").split("\n- ").joinToString("", "<ul>", "</ul>") {
+                    "<li>${text(it)}</li>"
+                }
+            else "<p>${text(block)}</p>"
+        }
     }
 }
 
@@ -86,12 +92,12 @@ intellijPlatform {
     pluginConfiguration {
         name = "DBT Lens"
         ideaVersion { sinceBuild = "253" }
+        val pluginVersion = project.version.toString()
         changeNotes =
             providers.fileContents(layout.projectDirectory.file("CHANGELOG.md")).asText.map {
-                changeNotesHtml(it)
+                ChangeNotes.html(it, pluginVersion)
             }
     }
-    // Credentials are supplied only to the Marketplace workflow; see CONTRIBUTING.md.
     signing {
         certificateChain = providers.environmentVariable("CERTIFICATE_CHAIN")
         privateKey = providers.environmentVariable("PRIVATE_KEY")
@@ -119,7 +125,6 @@ tasks.withType<AbstractArchiveTask>().configureEach {
     isReproducibleFileOrder = true
 }
 
-// Publishing signs the ZIP checked by the release workflow instead of rebuilding it.
 tasks.signPlugin {
     providers.gradleProperty("releaseArchive").orNull?.let { archiveFile = file(it) }
 }
@@ -143,7 +148,6 @@ tasks.prepareTestSandbox {
         disabledPlugins.add("org.jetbrains.plugins.yaml")
         disabledPlugins.add("com.intellij.modules.json")
     }
-    // Omitting a test dependency does not disable plugins bundled in the target IDE.
     if (providers.gradleProperty("withSqlTests").orNull != "true")
         disabledPlugins.add("com.intellij.database")
     if (providers.gradleProperty("withTextmateTests").orNull == "false")

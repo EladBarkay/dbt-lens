@@ -1,55 +1,88 @@
 # Contributing
 
-Use Java 21 for the IntelliJ IDEA 2025.3.3 baseline. PyCharm 2026.2.3 requires Java 25 for its
-SDK/runtime; the plugin's bytecode and Kotlin language/API levels stay compatible with the baseline.
-The wrapper, compiler, IntelliJ Platform plugin and formatter are pinned in the repository.
+Thanks for helping improve DBT Lens. Bug reports, ideas and pull requests are all welcome.
 
-## Development checks
+- **Bugs and ideas**: open an [issue](https://github.com/EladBarkay/dbt-lens/issues) with your IDE
+  version, plugin version and a minimal example.
+- **Security problems**: please don't open a public issue; see [SECURITY.md](SECURITY.md).
+
+## Setup
+
+You need **JDK 21**. No dbt installation is needed; the CLI tests use `/usr/bin/python3` fixtures on
+Unix and never touch a warehouse. The first build downloads the IntelliJ SDK and its JetBrains Runtime.
 
 ```sh
-./gradlew ktfmtFormat
-./gradlew check verifyPluginProjectConfiguration verifyPluginStructure buildPlugin -PwithSqlTests=true
-./gradlew check -PwithSqlTests=false -PwithTextmateTests=false -PwithYamlTests=false -PfreeEditionTests=true
-./gradlew check -PplatformType=PY -PplatformVersion=2026.2.3 -PfreeEditionTests=true
-./gradlew verifyPlugin -PverifySupportedIdes=true
+./gradlew check buildPlugin     # format check, tests and the plugin ZIP
+./gradlew runIde                # start a sandbox IDE with the plugin installed
+./gradlew ktfmtFormat           # apply the project's Kotlin style
 ```
 
-The CI matrix also tests the TextMate host with SQL disabled. Binary verification has its own job
-with Java 21 for baseline compilation and Java 25 for verification; both toolchain paths are explicit.
-Local SDK/runtime overrides and offline verifier limits are documented in README.md and
-`docs/feasibility.md`. CLI fixtures use Python 3 on Unix and do not query a warehouse.
-Do not present fixture results as Windows, Fusion or live-adapter qualification.
+The ZIP is written to `build/distributions/`. The Gradle wrapper, Kotlin compiler, IntelliJ Platform
+plugin and formatter versions are pinned in the repository.
 
-## Design constraints
+## Test matrix
 
-- Keep the lexer/parser source-preserving and restartable. Bound nesting, scanning and artifact reads;
-  check cancellation during work that can grow with project size.
-- Share configuration, declaration and scope rules between editor features. Keep dynamic values
-  unresolved and retain duplicate navigation candidates instead of selecting an arbitrary result.
-- Core editor code must load without SQL, TextMate, JSON or YAML. Optional language APIs belong behind
-  their descriptor/extension bridges. Add coverage to the minimal-host suite when changing a boundary.
-- Read PSI under cancellable read actions. Read artifact JSON outside the read lock and UI thread.
-  Dispose editors, listeners and background work with their owning panel or project service.
-- Editor assistance never executes dbt or project code. CLI commands are explicit, cancellable argument
-  vectors; preserve their environment/logging boundaries and exact resource selection.
-- Add regression tests for observable bugs and meaningful behavior. Prefer a small shared helper to
-  repeated logic; avoid interfaces and abstractions that have no concrete use.
+CI runs four IDE configurations and a binary compatibility check on every pull request. To reproduce
+them locally:
 
-## Release process
+| Configuration | Command |
+| --- | --- |
+| IntelliJ with Database Tools | `./gradlew check -PwithSqlTests=true` |
+| TextMate only | `./gradlew check` |
+| Minimal host (no SQL, TextMate, JSON or YAML) | `./gradlew check -PwithTextmateTests=false -PwithYamlTests=false -PfreeEditionTests=true` |
+| Free PyCharm (needs Java 25) | `./gradlew check -PplatformType=PY -PplatformVersion=2026.2.3 -PfreeEditionTests=true` |
+| Plugin Verifier, both IDEs | `./gradlew verifyPlugin -PverifySupportedIdes=true` |
 
-1. Update the single version in `build.gradle.kts`, installation references and CHANGELOG.md.
-2. Open a PR to main. Require all four editor configurations and Plugin Verifier to pass on its head.
-3. Merge the reviewed PR, then create a matching `vX.Y.Z` tag on that commit.
-4. The tag rebuilds and verifies the source and creates a draft with its ZIP and checksum.
-5. Review the draft and qualification limits before publishing. Publishing the GitHub release signs the
-   checked ZIP and uploads it to the Marketplace; marking it as a pre-release targets the `eap` channel.
+The verifier needs both Java 21 and Java 25. If Gradle can't find them, pass
+`-Porg.gradle.java.installations.paths=/path/to/jdk21,/path/to/jdk25`.
 
-## Marketplace publication
+### Useful properties
 
-The Marketplace workflow runs only when a release is published. It re-checks the draft's checksum,
-signs that ZIP without rebuilding it, verifies the signature and uploads it. Its secrets are stored in
-the `marketplace` environment, which only accepts runs from `v*.*.*` tags; set them with
-`gh secret set NAME --env marketplace`:
+| Property | Effect |
+| --- | --- |
+| `-PlocalPlatformPath=/path/to/IDE.app/Contents` | Build against an installed IDE instead of downloading one |
+| `-PlocalRuntimePath=/path/to/jdk` | Use a local runtime instead of downloading the JetBrains Runtime |
+| `-PverificationIdePath=/path/to/IDE.app/Contents` | Also verify against an installed IDE |
+| `-PverifierOffline=true` | Verify using only already-downloaded dependencies |
+| `-PexperimentalSql=true` | Enable the experimental native SQL integration in `runIde` |
+
+Results against an SDK outside the CI matrix are experiments, not compatibility claims.
+
+## Design principles
+
+- **Never execute project code for editor features.** CLI commands are explicit, cancellable argument
+  vectors, never shell strings.
+- **Be conservative.** Leave dynamic values unresolved and show every duplicate candidate instead of
+  picking one.
+- **Stay optional.** Core editing must load without SQL, TextMate, JSON or YAML. Optional APIs belong
+  behind their descriptor bridges, with coverage in the minimal-host suite.
+- **Bound the work.** Keep the lexer and parser source-preserving and restartable, cap scans and
+  artifact reads, and check for cancellation in work that grows with project size.
+- **Respect threading.** Read PSI in cancellable read actions; parse artifact JSON off the UI thread
+  and outside the read lock. Dispose listeners and background work with their owner.
+- **Test behavior.** Add a regression test for each observable bug. Prefer a small shared helper over
+  repeated logic, and skip abstractions without a concrete use.
+
+## Pull requests
+
+1. Branch from `main` and keep the change focused.
+2. Run `./gradlew ktfmtFormat check` before pushing.
+3. Add an entry to `CHANGELOG.md` for user-visible changes.
+4. All CI checks must pass before merging.
+
+## Releasing
+
+1. Update `version` in `build.gradle.kts` and add a matching `## X.Y.Z` section to `CHANGELOG.md`.
+   That section becomes the Marketplace change notes.
+2. Merge the release PR, then tag that commit `vX.Y.Z` and push the tag.
+3. CI rebuilds, verifies and creates a **draft** GitHub release with the ZIP and its SHA-256 checksum.
+4. Review the draft, then publish it. Publishing signs the same ZIP and uploads it to the JetBrains
+   Marketplace. Mark the release as a pre-release to target the `eap` channel instead.
+
+### Marketplace setup
+
+The publish job uses secrets stored in the `marketplace` GitHub environment, which only accepts runs
+from `v*.*.*` tags. Set each one with `gh secret set NAME --env marketplace`:
 
 | Secret | Value |
 | --- | --- |
@@ -58,22 +91,16 @@ the `marketplace` environment, which only accepts runs from `v*.*.*` tags; set t
 | `PRIVATE_KEY_PASSWORD` | The private key's password |
 | `PUBLISH_TOKEN` | A Marketplace token from **My Tokens** |
 
-A self-signed certificate is sufficient; Marketplace adds its own signature. Keep the key outside the
-repository:
+A self-signed certificate is enough; the Marketplace adds its own signature. Generate the key outside
+the repository:
 
 ```sh
 openssl genpkey -aes-256-cbc -algorithm RSA -out private.pem -pkeyopt rsa_keygen_bits:4096
 openssl req -key private.pem -new -x509 -days 3650 -out chain.crt
 ```
 
-Because this job holds the signing key and token, its actions stay pinned to full commit SHAs (other
-workflows use release tags). Dependabot updates the SHA and version comment together.
+The first version of a plugin must be uploaded by hand on the Marketplace website and approved by
+JetBrains before the workflow can publish updates. The plugin ID can't change after that upload.
 
-The first version must be uploaded manually through the Marketplace website (it uses the same ZIP from
-the draft release) and approved by JetBrains review before `publishPlugin` can update the plugin.
-The plugin ID cannot change after that first upload. Marketplace change notes are generated from this
-version's CHANGELOG.md section.
-
-The current private repository plan does not expose branch protection. Maintain the checks-before-merge
-rule manually unless repository permissions/plan are changed; the draft-release workflow still enforces
-its checks regardless of branch protection. Dependency update PRs require the same validation.
+Because the publish job holds these secrets, its actions are pinned to full commit SHAs; the other
+workflows use release tags. Dependabot keeps both up to date.

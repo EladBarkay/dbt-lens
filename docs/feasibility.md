@@ -1,4 +1,8 @@
-# First development milestone and SQL gate
+# Engineering notes: SQL integration and qualification
+
+> [!NOTE]
+> Internal design and qualification record, kept for maintainers. For using the plugin, see the
+> [user guide](user-guide.md).
 
 ## Implementation boundaries
 
