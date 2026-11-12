@@ -124,7 +124,8 @@ For a file without a detected dbt root, use **Override File Type** and
 choose **dbt Jinja**. After updating to dbt Lens 1.0.0, restart the IDE and reopen the model to refresh its
 existing language selection.
 
-The plugin keeps its original `dev.dbt.jinja` ID so dbt Lens upgrades existing installations.
+The plugin ID is `eladbarkay.dev.dbtlens`. Builds before the Marketplace release used `dev.dbt.jinja`;
+uninstall that version before installing this one, because the IDE treats them as separate plugins.
 Its internal language and file-type name remains **dbt Jinja**.
 
 ## YAML assistance
@@ -223,7 +224,8 @@ The installation ZIP appears at `build/distributions/dbt-lens-1.0.0.zip`. Use **
 from Disk** to install it in a compatible IDE, or `./gradlew runIde` to start a separate development IDE.
 The minimum IDE build is 253. CI exercises IntelliJ IDEA 2025.3.3 and PyCharm 2026.2.3; newer IDEs
 can install the plugin, but compatibility claims cover the versions actually tested. Qualification
-is recorded in [docs/feasibility.md](docs/feasibility.md). This release is not published to the JetBrains Marketplace.
+is recorded in [docs/feasibility.md](docs/feasibility.md). Marketplace publication is set up as described in
+[CONTRIBUTING.md](CONTRIBUTING.md#marketplace-publication); the first upload is a manual, reviewed step.
 
 To use an installed SDK and runtime, supply paths explicitly (on macOS, SDK paths end in `Contents`):
 
@@ -366,8 +368,9 @@ maintenance/release checks. See [CHANGELOG.md](CHANGELOG.md), [the release revie
 and [CONTRIBUTING.md](CONTRIBUTING.md).
 
 Version tags trigger the complete CI matrix and binary verifier, then create a **draft** GitHub release
-with the checked ZIP and SHA-256 checksum. Publishing the draft or submitting to Marketplace is a
-separate maintainer action. Tag names must match the packaged version and point to a commit in main.
+with the checked ZIP and SHA-256 checksum. Publishing the draft is a separate maintainer action; it
+signs that same ZIP and uploads it to the JetBrains Marketplace (pre-releases go to the `eap` channel).
+Tag names must match the packaged version and point to a commit in main.
 
 The project uses [Apache-2.0](LICENSE). Bundled schemas retain their upstream license and provenance;
 see [NOTICE](NOTICE). dbt Lens is an independent project and is not endorsed by dbt Labs or JetBrains.

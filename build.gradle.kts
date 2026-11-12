@@ -60,10 +60,47 @@ tasks.withType<KotlinCompile>().configureEach {
     }
 }
 
+// Marketplace change notes are the CHANGELOG.md section for the packaged version.
+fun changeNotesHtml(changelog: String): String {
+    val section =
+        changelog.substringAfter("\n## $version ", "").substringAfter('\n').substringBefore("\n## ")
+    require(section.isNotBlank()) { "CHANGELOG.md has no section for $version" }
+    fun text(markdown: String) =
+        markdown
+            .replace(Regex("\\s+"), " ")
+            .trim()
+            .replace("&", "&amp;")
+            .replace("<", "&lt;")
+            .replace(">", "&gt;")
+            .replace(Regex("`([^`]+)`"), "<code>$1</code>")
+    return section.trim().split(Regex("\n\\s*\n")).joinToString("\n") { block ->
+        if (block.startsWith("- "))
+            block.removePrefix("- ").split("\n- ").joinToString("", "<ul>", "</ul>") {
+                "<li>${text(it)}</li>"
+            }
+        else "<p>${text(block)}</p>"
+    }
+}
+
 intellijPlatform {
     pluginConfiguration {
-        name = "dbt Lens"
+        name = "DBT Lens"
         ideaVersion { sinceBuild = "253" }
+        changeNotes =
+            providers.fileContents(layout.projectDirectory.file("CHANGELOG.md")).asText.map {
+                changeNotesHtml(it)
+            }
+    }
+    // Credentials are supplied only to the Marketplace workflow; see CONTRIBUTING.md.
+    signing {
+        certificateChain = providers.environmentVariable("CERTIFICATE_CHAIN")
+        privateKey = providers.environmentVariable("PRIVATE_KEY")
+        password = providers.environmentVariable("PRIVATE_KEY_PASSWORD")
+    }
+    publishing {
+        token = providers.environmentVariable("PUBLISH_TOKEN")
+        channels =
+            providers.gradleProperty("publishChannel").map { listOf(it) }.orElse(listOf("default"))
     }
     pluginVerification {
         ides {
@@ -80,6 +117,16 @@ tasks.check { dependsOn(tasks.named("ktfmtCheck")) }
 tasks.withType<AbstractArchiveTask>().configureEach {
     isPreserveFileTimestamps = false
     isReproducibleFileOrder = true
+}
+
+// Publishing signs the ZIP checked by the release workflow instead of rebuilding it.
+tasks.signPlugin {
+    providers.gradleProperty("releaseArchive").orNull?.let { archiveFile = file(it) }
+}
+
+tasks.verifyPluginSignature {
+    inputArchiveFile = tasks.signPlugin.flatMap { it.signedArchiveFile }
+    dependsOn(tasks.signPlugin)
 }
 
 tasks.verifyPlugin {

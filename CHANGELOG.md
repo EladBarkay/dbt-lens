@@ -12,6 +12,11 @@
 - Add minimal-host and free-PyCharm CI, binary compatibility verification, pinned Actions,
   dependency updates, checksummed draft releases, Apache-2.0 licensing and maintenance guidance.
 - Upgrade the checked Gradle wrapper to support Java 25 and explicitly provide both verification toolchains.
+- Add Marketplace listing metadata and a signed publication workflow for reviewed releases.
+- Rename the plugin to DBT Lens with the Marketplace ID `eladbarkay.dev.dbtlens`. Uninstall builds
+  that used the previous `dev.dbt.jinja` ID before installing this version.
+- Reference GitHub Actions by release tag instead of commit SHA, except in the Marketplace job,
+  which keeps SHAs and scopes its secrets to a tag-restricted `marketplace` environment.
 
 ## 0.2.4 — Local dbt compilation
 
