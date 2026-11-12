@@ -211,7 +211,7 @@ object DbtSymbols {
                 if (it.name in setOf("dict", "namespace", "range", "cycler", "joiner"))
                     it.copy(
                         url =
-                            "https://jinja.palletsprojects.com/en/stable/templates/#list-of-global-functions"
+                            "https://jinja.palletsprojects.com/en/stable/templates/#list-of-global-functions",
                     )
                 else it
             }
@@ -346,7 +346,7 @@ object DbtSymbols {
                             DbtType.RELATION,
                             "Creates a dbt Relation.",
                             "https://docs.getdbt.com/reference/dbt-classes",
-                        )
+                        ),
                     )
                 "api.Column" -> listOf(f("create", "name, label_or_dtype", DbtType.COLUMN))
                 "builtins" -> listOfNotNull(CONTEXT["ref"], CONTEXT["source"], CONTEXT["config"])

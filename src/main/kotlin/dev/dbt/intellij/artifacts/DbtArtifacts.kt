@@ -74,7 +74,7 @@ class DbtArtifacts(private val project: Project) : Disposable {
     fun load(request: ArtifactRequest, force: Boolean = false): ArtifactSnapshot {
         check(
             !ApplicationManager.getApplication().isDispatchThread ||
-                ApplicationManager.getApplication().isUnitTestMode
+                ApplicationManager.getApplication().isUnitTestMode,
         ) {
             "Artifact parsing must run in background"
         }
@@ -91,7 +91,7 @@ class DbtArtifacts(private val project: Project) : Disposable {
         // a mixed generation as current; the next request retries after the writer settles.
         if (runCatching { stamps(request) }.getOrNull() != before)
             return ArtifactSnapshot(
-                messages = listOf("Artifacts changed while being read; refresh after dbt finishes")
+                messages = listOf("Artifacts changed while being read; refresh after dbt finishes"),
             )
         cache[request] = Cached(before, result)
         return result

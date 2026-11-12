@@ -245,12 +245,12 @@ object ArtifactReader {
         if (!Files.isRegularFile(manifest))
             return ArtifactSnapshot(
                 messages =
-                    listOf("No manifest.json in $target. Click Generate manifest to create it.")
+                    listOf("No manifest.json in $target. Click Generate manifest to create it."),
             )
         try {
             require(
                 target.toRealPath().startsWith(request.root.toRealPath()) &&
-                    manifest.toRealPath().startsWith(target.toRealPath())
+                    manifest.toRealPath().startsWith(target.toRealPath()),
             ) {
                 "Artifact files must remain inside the dbt project's output directory"
             }

@@ -35,8 +35,8 @@ class DbtEditorTest : BasePlatformTestCase() {
         assertEquals(source, myFixture.file.node.text)
         assertEmpty(
             errors(
-                "{% for x in rows %}{% if x is not none %}{{ x|upper }}{% else %}null{% endif %}{% endfor %}"
-            )
+                "{% for x in rows %}{% if x is not none %}{{ x|upper }}{% else %}null{% endif %}{% endfor %}",
+            ),
         )
         assertEmpty(errors("{{ config(materialization='view') }} {{ obj.filter(test=1e-3) }}"))
     }
@@ -44,7 +44,7 @@ class DbtEditorTest : BasePlatformTestCase() {
     fun testMacroSignatureCallsAndLocalNavigation() {
         val file =
             parse(
-                "{% macro normalize(value, fallback='unknown') %}{{ value }}{% endmacro %}select {{ normalize('x') }}"
+                "{% macro normalize(value, fallback='unknown') %}{{ value }}{% endmacro %}select {{ normalize('x') }}",
             )
         val macro = LocalMacros.declarations(file).single()
         assertEquals("normalize", macro.name)
@@ -61,7 +61,7 @@ class DbtEditorTest : BasePlatformTestCase() {
     fun testAmbiguityAndQualifiedCallsAreNotMisresolved() {
         val file =
             parse(
-                "{% macro m() %}{% endmacro %}{% macro m(x) %}{% endmacro %}{{ m() }} {{ pkg.m() }} {{ adapter.dispatch('m')() }}"
+                "{% macro m() %}{% endmacro %}{% macro m(x) %}{% endmacro %}{{ m() }} {{ pkg.m() }} {{ adapter.dispatch('m')() }}",
             )
         val calls =
             PsiTreeUtil.findChildrenOfType(file, DbtVariable::class.java).mapNotNull {
@@ -86,7 +86,7 @@ class DbtEditorTest : BasePlatformTestCase() {
     fun testBindingsShadowCallsButCustomFiltersCanNavigate() {
         val file =
             parse(
-                "{% macro m() %}{% endmacro %}{% macro other(m) %}{{ m() }}{% endmacro %}{{ 'x'|m() }}"
+                "{% macro m() %}{% endmacro %}{% macro other(m) %}{{ m() }}{% endmacro %}{{ 'x'|m() }}",
             )
         val calls =
             PsiTreeUtil.findChildrenOfType(file, DbtVariable::class.java).mapNotNull {
@@ -107,7 +107,7 @@ class DbtEditorTest : BasePlatformTestCase() {
         )
         val filtered =
             parse(
-                "{% macro m() %}{% endmacro %}{{ m()|upper }} {{ 'x'|replace(m()) }} {{ 'x'|m()() }}"
+                "{% macro m() %}{% endmacro %}{{ m()|upper }} {{ 'x'|replace(m()) }} {{ 'x'|m()() }}",
             )
         val resolved =
             PsiTreeUtil.findChildrenOfType(filtered, DbtVariable::class.java).mapNotNull {
@@ -142,7 +142,7 @@ class DbtEditorTest : BasePlatformTestCase() {
 
     fun testCompletionInJinjaAndNotInSqlOrStrings() {
         parse(
-            "{% macro normalize(value) %}{% endmacro %}{% macro normalizer(value) %}{% endmacro %}select {{ norm<caret> }}"
+            "{% macro normalize(value) %}{% endmacro %}{% macro normalizer(value) %}{% endmacro %}select {{ norm<caret> }}",
         )
         assertContainsElements(myFixture.completeBasic().map { it.lookupString }, "normalize")
         parse("select unrelated<caret>")
@@ -165,8 +165,8 @@ class DbtEditorTest : BasePlatformTestCase() {
         assertEquals(source, ranges.joinToString("") { source.substring(it.first, it.second) })
         assertTrue(
             types.containsAll(
-                setOf(T.SQL_KEYWORD, T.EXPR_OPEN, T.IDENTIFIER, T.STRING, T.SQL_COMMENT)
-            )
+                setOf(T.SQL_KEYWORD, T.EXPR_OPEN, T.IDENTIFIER, T.STRING, T.SQL_COMMENT),
+            ),
         )
     }
 

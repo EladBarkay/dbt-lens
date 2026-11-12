@@ -150,7 +150,7 @@ class DbtStructureEditorTest : BasePlatformTestCase() {
             )
             myFixture.editor.foldingModel.runBatchFoldingOperation { block.isExpanded = true }
             assertFalse(
-                myFixture.editor.foldingModel.isOffsetCollapsed(source.indexOf("select 123"))
+                myFixture.editor.foldingModel.isOffsetCollapsed(source.indexOf("select 123")),
             )
         }
     }

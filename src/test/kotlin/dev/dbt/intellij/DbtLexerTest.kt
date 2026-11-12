@@ -26,7 +26,7 @@ class DbtLexerTest {
                         lexer.tokenStart,
                         lexer.tokenEnd,
                         lexer.state,
-                    )
+                    ),
                 )
                 assertTrue("Lexer must make progress", lexer.tokenEnd > lexer.tokenStart)
                 lexer.advance()

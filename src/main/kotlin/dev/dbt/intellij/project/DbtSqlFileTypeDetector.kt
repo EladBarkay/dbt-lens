@@ -28,7 +28,7 @@ class DbtSqlFileTypeDetector : FileTypeRegistry.FileTypeDetector {
 /** The free IDE also ships a legacy SQL syntax table, which has no Language to substitute. */
 class DbtSqlFileTypeOverrider : FileTypeOverrider {
     override fun getOverriddenFileType(
-        file: VirtualFile
+        file: VirtualFile,
     ): com.intellij.openapi.fileTypes.FileType? {
         if (!file.isValid || file.isDirectory || !file.extension.equals("sql", ignoreCase = true))
             return null

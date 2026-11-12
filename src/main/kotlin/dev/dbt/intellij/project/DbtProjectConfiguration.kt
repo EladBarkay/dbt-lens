@@ -21,7 +21,7 @@ object DbtProjectConfiguration {
 
     private fun keyPattern(key: String) =
         Regex(
-            """^(?:${Regex.escape(key)}|'${Regex.escape(key)}'|"${Regex.escape(key)}")[ \t]*:[ \t]*(.*)$"""
+            """^(?:${Regex.escape(key)}|'${Regex.escape(key)}'|"${Regex.escape(key)}")[ \t]*:[ \t]*(.*)$""",
         )
 
     fun contains(text: String, key: String): Boolean {

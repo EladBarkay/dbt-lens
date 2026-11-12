@@ -61,7 +61,7 @@ class DbtDispatchEditorTest : BasePlatformTestCase() {
         val postgres =
             macro("warehouse/dbt_packages/utils/macros/postgres.jinja", "postgres__format_value")
         open(
-            "{{ adapter.dispatch('format_value', 'utils')(1) }} {{ adapter.dispatch(macro_name='format_value', macro_namespace='utils') }}"
+            "{{ adapter.dispatch('format_value', 'utils')(1) }} {{ adapter.dispatch(macro_name='format_value', macro_namespace='utils') }}",
         )
         val expected = listOf(local, default, postgres, snowflake)
         literals().forEach { assertEquals(expected, resolved(it)) }
@@ -87,7 +87,7 @@ class DbtDispatchEditorTest : BasePlatformTestCase() {
         val snowflake =
             macro("warehouse/dbt_packages/utils/macros/snowflake.jinja", "snowflake__format_value")
         open(
-            "{{ adapter.dispatch('format_value', 'utils')(1) }} {{ utils.snowflake__format_value(2) }} {{ utils.default__format_value(3) }} {{ 'format_value' }} {# {{ adapter.dispatch('format_value', 'utils') }} #}"
+            "{{ adapter.dispatch('format_value', 'utils')(1) }} {{ utils.snowflake__format_value(2) }} {{ utils.default__format_value(3) }} {{ 'format_value' }} {# {{ adapter.dispatch('format_value', 'utils') }} #}",
         )
         for (target in listOf(default, snowflake)) {
             val refs = ReferencesSearch.search(target).findAll()
@@ -106,7 +106,7 @@ class DbtDispatchEditorTest : BasePlatformTestCase() {
         val other =
             macro("warehouse/dbt_packages/other/macros/default.jinja", "default__format_value")
         open(
-            "{{ adapter.dispatch('format_value', 'utils') }} {{ adapter.dispatch('format_value', 'other') }}"
+            "{{ adapter.dispatch('format_value', 'utils') }} {{ adapter.dispatch('format_value', 'other') }}",
         )
         assertEquals(listOf(utils), resolved(literals()[0]))
         assertEquals(listOf(other), resolved(literals()[1]))
@@ -137,7 +137,7 @@ class DbtDispatchEditorTest : BasePlatformTestCase() {
                     default.nameIdentifier!!.firstChild,
                     default.textOffset + 2,
                     myFixture.editor,
-                )
+                ),
         )
     }
 

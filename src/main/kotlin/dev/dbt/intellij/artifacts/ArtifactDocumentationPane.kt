@@ -29,7 +29,7 @@ internal class ArtifactDocumentationPane :
                 li { margin-top: 3px; margin-bottom: 3px; }
                 .bottom { margin-top: 16px; font-size: 90%; }
                 """
-                    .trimIndent()
+                    .trimIndent(),
             )
         },
     ) {

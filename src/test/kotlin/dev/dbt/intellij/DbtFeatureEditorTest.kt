@@ -135,7 +135,7 @@ class DbtFeatureEditorTest : BasePlatformTestCase() {
         )
         val values = calls().filter { it.text == "value" }
         assertTrue(
-            values[0].reference!!.resolve()!!.containingFile.virtualFile.path.contains("/macros/")
+            values[0].reference!!.resolve()!!.containingFile.virtualFile.path.contains("/macros/"),
         )
         assertEquals(dependency, values[1].reference!!.resolve()!!.containingFile)
         WriteCommandAction.runWriteCommandAction(project) {
@@ -205,20 +205,20 @@ class DbtFeatureEditorTest : BasePlatformTestCase() {
         assertTrue(
             colors.any {
                 it.forcedTextAttributesKey == DbtAnnotator.CALL && it.startOffset == call.textOffset
-            }
+            },
         )
         val graph = calls().filter { it.text == "graph" }
         assertTrue(
             colors.any {
                 it.forcedTextAttributesKey == DbtAnnotator.GLOBAL &&
                     it.startOffset == graph[0].textOffset
-            }
+            },
         )
         assertTrue(
             colors.any {
                 it.forcedTextAttributesKey == DbtAnnotator.VARIABLE &&
                     it.startOffset == graph[1].textOffset
-            }
+            },
         )
     }
 
@@ -247,21 +247,21 @@ class DbtFeatureEditorTest : BasePlatformTestCase() {
                 colors.any {
                     it.forcedTextAttributesKey == DbtAnnotator.CALL &&
                         it.startOffset == filter.textOffset
-                }
+                },
             )
         }
         assertTrue(
             colors.any {
                 it.forcedTextAttributesKey == DbtAnnotator.ARGUMENT &&
                     it.startOffset == myFixture.file.text.indexOf("rows=rows")
-            }
+            },
         )
         for (unknown in calls().filter { it.text in listOf("unknown", "field") }) {
             assertFalse(
                 colors.any {
                     it.forcedTextAttributesKey == DbtAnnotator.VARIABLE &&
                         it.startOffset == unknown.textOffset
-                }
+                },
             )
         }
     }

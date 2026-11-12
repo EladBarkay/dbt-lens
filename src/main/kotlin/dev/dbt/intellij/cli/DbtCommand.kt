@@ -54,14 +54,14 @@ object DbtCommandPlanner {
             val match =
                 Regex("([A-Za-z_][A-Za-z_0-9]*)\\s*=\\s*(.*)").matchEntire(line)
                     ?: throw IllegalArgumentException(
-                        "Invalid environment entry on line ${index + 1}; use literal NAME=value"
+                        "Invalid environment entry on line ${index + 1}; use literal NAME=value",
                     )
             var value = match.groupValues[2]
             if (value.startsWith('"') || value.startsWith('\'')) {
                 val quote = value.first()
                 val quoted =
                     Regex(
-                            "^${Regex.escape(quote.toString())}(.*)${Regex.escape(quote.toString())}(?:\\s+#.*)?$"
+                            "^${Regex.escape(quote.toString())}(.*)${Regex.escape(quote.toString())}(?:\\s+#.*)?$",
                         )
                         .matchEntire(value)
                 require(quoted != null) { "Unclosed environment value on line ${index + 1}" }
@@ -134,7 +134,7 @@ object DbtCommandPlanner {
                         .firstOrNull(::usable)
             }
                 ?: throw IllegalArgumentException(
-                    "dbt executable not found. Configure dbt Lens settings or install dbt in the project's virtualenv."
+                    "dbt executable not found. Configure dbt Lens settings or install dbt in the project's virtualenv.",
                 )
         val bin = executable.parent
         val pathKey = env.keys.firstOrNull { it.equals("PATH", windows) } ?: "PATH"
@@ -170,7 +170,7 @@ object DbtCommandPlanner {
                 require(
                     !command.invocation.isNullOrBlank() &&
                         command.invocation.length <= 65_536 &&
-                        '\u0000' !in command.invocation
+                        '\u0000' !in command.invocation,
                 ) {
                     "Enter a macro call smaller than 64 KB"
                 }
@@ -185,7 +185,7 @@ object DbtCommandPlanner {
         require(
             packageName.matches(Regex("[A-Za-z_][A-Za-z_0-9]*")) &&
                 dev.dbt.intellij.artifacts.ArtifactReader.safeRelative(originalPath) &&
-                originalPath.none { it.isWhitespace() || it.isISOControl() || it in ",+*?:[]{}\\" }
+                originalPath.none { it.isWhitespace() || it.isISOControl() || it in ",+*?:[]{}\\" },
         ) {
             "This resource path cannot be selected unambiguously; use Compile project"
         }
@@ -210,7 +210,7 @@ object DbtCommandPlanner {
         // A basename can match several resources in different directories. Never broaden
         // Compile current when saved metadata cannot identify a single resource.
         throw IllegalArgumentException(
-            "Saved metadata cannot identify this resource; generate a manifest or use Compile project"
+            "Saved metadata cannot identify this resource; generate a manifest or use Compile project",
         )
     }
 }

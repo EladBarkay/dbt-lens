@@ -25,7 +25,7 @@ class DbtMacro(node: ASTNode) : ASTWrapperPsiElement(node), PsiNameIdentifierOwn
 
     override fun setName(name: String): PsiElement =
         throw IncorrectOperationException(
-            "Macro rename is deferred until project-wide semantic resolution is available."
+            "Macro rename is deferred until project-wide semantic resolution is available.",
         )
 
     val parameters: List<String>

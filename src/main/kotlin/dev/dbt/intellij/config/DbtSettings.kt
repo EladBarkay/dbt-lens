@@ -67,13 +67,13 @@ class DbtSettingsConfigurable(private val project: Project) : Configurable {
                     .also { add(it) }
             add(
                 JLabel(
-                    "Uses JetBrains dialect settings; dbt Lens Jinja features in .sql files are disabled in this mode."
-                )
+                    "Uses JetBrains dialect settings; dbt Lens Jinja features in .sql files are disabled in this mode.",
+                ),
             )
             add(
                 JLabel(
-                    "Restart the IDE after changing this option to refresh existing SQL editors."
-                )
+                    "Restart the IDE after changing this option to refresh existing SQL editors.",
+                ),
             )
             add(JLabel("dbt commands"))
             fun path(label: String, directory: Boolean = false): TextFieldWithBrowseButton {
@@ -96,13 +96,13 @@ class DbtSettingsConfigurable(private val project: Project) : Configurable {
             environment = path("Environment file (optional, literal NAME=value entries)")
             add(
                 JLabel(
-                    "Commands inherit the IDE environment. Environment values stay in the selected file."
-                )
+                    "Commands inherit the IDE environment. Environment values stay in the selected file.",
+                ),
             )
             add(
                 JLabel(
-                    "Compile may query the selected warehouse. Commands run only when you click an action."
-                )
+                    "Compile may query the selected warehouse. Commands run only when you click an action.",
+                ),
             )
             reset()
         }

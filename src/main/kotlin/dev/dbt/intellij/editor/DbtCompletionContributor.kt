@@ -134,7 +134,7 @@ class DbtCompletionContributor : CompletionContributor() {
                                         .withTypeText("Jinja tag")
                                         .withInsertHandler { insertion, _ ->
                                             DbtBlockTemplates.insert(it, insertion)
-                                        }
+                                        },
                                 )
                             }
                         return
@@ -143,7 +143,7 @@ class DbtCompletionContributor : CompletionContributor() {
                     locals.forEach { (name, bindings) ->
                         result.addElement(
                             LookupElementBuilder.create(bindings.first(), name)
-                                .withTypeText(DbtTypeInference.of(bindings.first()).name, true)
+                                .withTypeText(DbtTypeInference.of(bindings.first()).name, true),
                         )
                     }
                     DbtTypeInference.contextual(position)
@@ -183,7 +183,7 @@ class DbtCompletionContributor : CompletionContributor() {
                 .withStrikeoutness(symbol.deprecated)
                 .withInsertHandler { context, _ ->
                     if (symbol.signature != null) insertCall(context, symbol.signature.isNotBlank())
-                }
+                },
         )
     }
 
@@ -196,7 +196,7 @@ class DbtCompletionContributor : CompletionContributor() {
                         .withTypeText(macro.containingFile.name, true)
                         .withInsertHandler { context, _ ->
                             insertCall(context, macro.parameters.isNotEmpty())
-                        }
+                        },
                 )
             }
         }
@@ -251,7 +251,7 @@ class DbtCompletionContributor : CompletionContributor() {
                                     context.tailOffset,
                                     context.tailOffset + 1,
                                 )
-                        }
+                        },
                 )
             }
     }
