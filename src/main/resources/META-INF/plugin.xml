@@ -1,7 +1,7 @@
 <idea-plugin>
-    <id>dev.dbt.jinja</id>
-    <name>dbt Lens</name>
-    <vendor>dbt Lens contributors</vendor>
+    <id>eladbarkay.dev.dbtlens</id>
+    <name>DBT Lens</name>
+    <vendor url="https://github.com/EladBarkay/dbt-lens">dbt Lens contributors</vendor>
     <description><![CDATA[
         Jinja parsing, highlighting, folding, completion, and project macro navigation
         in SQL templates, with dbt documentation, compiled SQL previews, resource lineage,
