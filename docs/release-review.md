@@ -138,9 +138,9 @@ a matching checksum before creating a draft. Only publishing that draft starts t
 Marketplace workflow, which signs and uploads the checked ZIP with secrets scoped to a
 `marketplace` environment that accepts only version tags. Its actions are pinned to commit SHAs.
 
-The current private repository plan rejects branch-protection configuration. Consequently,
-checks-before-merge remains a documented owner rule; it is not represented as server-enforced
-protection. The draft workflow's dependency on checks applies independently of that limitation.
+Branch protection on `main` requires all five CI checks and blocks force pushes and deletion.
+A ruleset prevents version tags from being moved or deleted, and the `marketplace` environment
+requires the owner's approval before its secrets are used.
 The new tag-to-draft workflow has been statically validated; its first end-to-end execution
 will occur on a matching tag after the workflow is merged.
 
