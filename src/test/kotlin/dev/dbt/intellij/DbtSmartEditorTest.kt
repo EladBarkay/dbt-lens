@@ -41,7 +41,7 @@ class DbtSmartEditorTest : BasePlatformTestCase() {
 
     fun testVariableFindUsagesAndDeclarationHighlightingRespectMacroScope() {
         open(
-            "{% macro a(value) %}{% set data = value %}{{ data }}{{ data }}{{ value }}{% endmacro %}{% macro b(value) %}{{ value }}{% endmacro %}"
+            "{% macro a(value) %}{% set data = value %}{{ data }}{{ data }}{{ value }}{% endmacro %}{% macro b(value) %}{{ value }}{% endmacro %}",
         )
         val bindings = PsiTreeUtil.findChildrenOfType(myFixture.file, DbtBinding::class.java)
         val data = bindings.single { it.text == "data" }
@@ -64,7 +64,7 @@ class DbtSmartEditorTest : BasePlatformTestCase() {
 
     fun testFindUsagesIncludesReassignmentsButExcludesNestedShadowing() {
         open(
-            "{% macro a(value) %}{{ value }}{% set value = 'x' %}{{ value }}{% for value in [] %}{{ value }}{% endfor %}{{ value }}{% endmacro %}"
+            "{% macro a(value) %}{{ value }}{% set value = 'x' %}{{ value }}{% for value in [] %}{{ value }}{% endfor %}{{ value }}{% endmacro %}",
         )
         val bindings =
             PsiTreeUtil.findChildrenOfType(myFixture.file, DbtBinding::class.java).filter {
@@ -82,20 +82,21 @@ class DbtSmartEditorTest : BasePlatformTestCase() {
 
     fun testLoopWithAndConditionalScopes() {
         open(
-            "{% set root = 1 %}{% for row in [] %}{{ row }}{% endfor %}{{ row }}{% with root = 'x', value = 1 %}{{ root }}{{ value }}{% endwith %}{{ root }}{{ value }}"
+            "{% set root = 1 %}{% for row in [] %}{{ row }}{% endfor %}{{ row }}{% with root = 'x', value = 1 %}{{ root }}{{ value }}{% endwith %}{{ root }}{{ value }}",
         )
         val row = variables().filter { it.text == "row" }
         assertNotNull(row[0].reference?.resolve())
         assertNull(row[1].reference)
         val root = variables().filter { it.text == "root" }
         assertTrue(
-            root[0].reference!!.resolve()!!.textOffset != root[1].reference!!.resolve()!!.textOffset
+            root[0].reference!!.resolve()!!.textOffset !=
+                root[1].reference!!.resolve()!!.textOffset,
         )
         val value = variables().filter { it.text == "value" }
         assertNotNull(value[0].reference?.resolve())
         assertNull(value[1].reference)
         open(
-            "{% if ready %}{% set choice = 'x' %}{% else %}{% set choice = 1 %}{% endif %}{{ choice }}"
+            "{% if ready %}{% set choice = 'x' %}{% else %}{% set choice = 1 %}{% endif %}{{ choice }}",
         )
         val reference =
             variables().single { it.text == "choice" }.reference
@@ -129,7 +130,7 @@ class DbtSmartEditorTest : BasePlatformTestCase() {
 
     fun testAcceptedMacroCompletionCreatesEditableBlockTemplate() {
         com.intellij.codeInsight.template.impl.TemplateManagerImpl.setTemplateTesting(
-            testRootDisposable
+            testRootDisposable,
         )
         open("{% mac<caret>%}")
         myFixture.completeBasic()
@@ -145,7 +146,7 @@ class DbtSmartEditorTest : BasePlatformTestCase() {
 
     fun testOtherAcceptedBlockTemplatesProduceBalancedEditableSyntax() {
         com.intellij.codeInsight.template.impl.TemplateManagerImpl.setTemplateTesting(
-            testRootDisposable
+            testRootDisposable,
         )
         for (keyword in listOf("if", "for", "call", "with", "raw", "docs", "materialization")) {
             open("{% $keyword<caret>%}")
@@ -202,11 +203,11 @@ class DbtSmartEditorTest : BasePlatformTestCase() {
         assertNull(DbtTypeInference.symbol(ref))
         assertNull(ResourceCall.from(ref.parent))
         open(
-            "{% macro helper() %}{% endmacro %}{% macro a(helper) %}{{ helper }}{% endmacro %}{% macro b() %}{{ helper() }}{% endmacro %}"
+            "{% macro helper() %}{% endmacro %}{% macro a(helper) %}{{ helper }}{% endmacro %}{% macro b() %}{{ helper() }}{% endmacro %}",
         )
         assertTrue(
             variables().last { it.text == "helper" }.reference?.resolve()
-                is dev.dbt.intellij.psi.DbtMacro
+                is dev.dbt.intellij.psi.DbtMacro,
         )
     }
 
@@ -286,7 +287,7 @@ class DbtSmartEditorTest : BasePlatformTestCase() {
         assertEmpty(
             DbtSymbols.members(dev.dbt.intellij.semantic.DbtType.DICT)
                 .single { it.name == "get" }
-                .parameters
+                .parameters,
         )
         has("{{ ref(<caret>) }}", "version=", "v=")
         absent("{{ source(<caret>) }}", "source_name=", "table_name=")
@@ -310,7 +311,7 @@ class DbtSmartEditorTest : BasePlatformTestCase() {
         assertTrue(
             DocumentationManager.getProviderFromElement(map)
                 .generateDoc(map, map)!!
-                .contains("attribute=None")
+                .contains("attribute=None"),
         )
         val colors = myFixture.doHighlighting()
         val relation = variables().single { it.text == "Relation" }
@@ -318,14 +319,14 @@ class DbtSmartEditorTest : BasePlatformTestCase() {
             colors.any {
                 it.startOffset == relation.textOffset &&
                     it.forcedTextAttributesKey == DbtAnnotator.DECLARATION
-            }
+            },
         )
         val api = variables().single { it.text == "api" }
         assertTrue(
             colors.any {
                 it.startOffset == api.textOffset &&
                     it.forcedTextAttributesKey == DbtAnnotator.GLOBAL
-            }
+            },
         )
     }
 
@@ -352,7 +353,7 @@ class DbtSmartEditorTest : BasePlatformTestCase() {
             DbtTypeInference.of(
                     PsiTreeUtil.findChildrenOfType(myFixture.file, DbtBinding::class.java).single {
                         it.text == "captured"
-                    }
+                    },
                 )
                 .name,
         )

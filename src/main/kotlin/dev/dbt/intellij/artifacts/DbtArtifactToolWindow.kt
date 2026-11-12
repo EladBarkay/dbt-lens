@@ -147,7 +147,7 @@ class DbtArtifactPanel(private val project: Project) : JPanel(BorderLayout()), D
                             com.intellij.openapi.options.ShowSettingsUtil.getInstance()
                                 .showSettingsDialog(project, "dbt Lens")
                         }
-                    }
+                    },
                 )
             }
         add(
@@ -325,7 +325,7 @@ class DbtArtifactPanel(private val project: Project) : JPanel(BorderLayout()), D
                         else if (node.language == "python" || node.originalPath.endsWith(".py"))
                             "-- Python models do not have a SQL preview.\n-- Their documentation and dependencies are available in the other tabs."
                         else
-                            "-- No saved compiled SQL for this resource.\n-- Use Compile current or Compile project to generate it."
+                            "-- No saved compiled SQL for this resource.\n-- Use Compile current or Compile project to generate it.",
                 )
                 status.text =
                     (if (info.second) "Source changed; saved output may be outdated"
@@ -417,7 +417,7 @@ class DbtArtifactPanel(private val project: Project) : JPanel(BorderLayout()), D
                     val namespace =
                         dev.dbt.intellij.psi.ProjectMacros.namespace(psi)
                             ?: throw IllegalArgumentException(
-                                "The dbt package needs a literal name in dbt_project.yml"
+                                "The dbt package needs a literal name in dbt_project.yml",
                             )
                     if (macroNames.isNotEmpty()) {
                         val calls = macroNames.associateWith { name -> "{{ $namespace.$name() }}" }
@@ -446,7 +446,7 @@ class DbtArtifactPanel(private val project: Project) : JPanel(BorderLayout()), D
                                     DbtCommandPlanner.selector(namespace, relative)
                                 else
                                     throw IllegalArgumentException(
-                                        "Generate manifest before compiling an installed dependency resource"
+                                        "Generate manifest before compiling an installed dependency resource",
                                     )
                         DbtCommand(kind, context, selector = selector, sourcePath = active.path)
                     }
@@ -561,7 +561,7 @@ private class LineageGraph(private val navigate: (String) -> Unit) : JPanel() {
                         .firstOrNull { it.value.contains(e.point) }
                         ?.let { navigate(it.key) }
                 }
-            }
+            },
         )
     }
 

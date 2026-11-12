@@ -203,9 +203,9 @@ Simultaneous native SQL assistance and complete Jinja editing remain a separate 
 
 ## Build and test
 
-Requires a **JDK 21** and network access for the first build. The Gradle wrapper is pinned to 9.3.0
-with a distribution checksum; the Kotlin compiler is 2.3.21 (language/API level 2.2, Java 21 output)
-and the IntelliJ Platform Gradle plugin is 2.19.0.
+Requires a **JDK 21** and network access for the first build. The Gradle wrapper is pinned to 9.9.0
+with a distribution checksum; the Kotlin compiler is 2.4.21 (language/API level 2.2, Java 21 output)
+and the IntelliJ Platform Gradle plugin is 2.20.0.
 The default SDK is IntelliJ IDEA 2025.3.3. Use `./gradlew ktfmtFormat` to apply the pinned Kotlin style. No dbt installation is needed for the IDE suites;
 the CLI process fixtures use `/usr/bin/python3` on Unix hosts. Packaging does not require Python or dbt.
 The build resolves its matching JetBrains Runtime automatically, unless a local runtime is supplied.

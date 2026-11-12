@@ -38,12 +38,12 @@ class DbtYamlIntegrationTest : BasePlatformTestCase() {
             assertNotNull(provider.schemaFile)
             assertNotNull(
                 JsonSchemaService.Impl.get(project)
-                    .getSchemaObjectForSchemaFile(provider.schemaFile!!)
+                    .getSchemaObjectForSchemaFile(provider.schemaFile!!),
             )
             assertTrue(
                 JsonSchemaService.Impl.get(project)
                     .getSchemaFilesForFile(file.virtualFile)
-                    .contains(provider.schemaFile)
+                    .contains(provider.schemaFile),
             )
             assertSame(DbtYamlIconProvider.ICON, DbtYamlIconProvider().getIcon(file, 0))
         }
@@ -165,7 +165,7 @@ class DbtYamlIntegrationTest : BasePlatformTestCase() {
                     calls.first().firstChild,
                     calls.first().textOffset,
                     myFixture.editor,
-                )
+                ),
         )
     }
 
@@ -212,7 +212,7 @@ class DbtYamlIntegrationTest : BasePlatformTestCase() {
             assertTrue(
                 it.element.text
                     .substring(it.rangeInElement.startOffset, it.rangeInElement.endOffset)
-                    .contains('(')
+                    .contains('('),
             )
         }
         val quoted = refs[1]

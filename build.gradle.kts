@@ -167,10 +167,10 @@ tasks.test {
     if (providers.gradleProperty("withTextmateTests").orNull == "false") {
         filter {
             excludeTestsMatching(
-                "dev.dbt.intellij.DbtProjectEditorTest.testRealTextmateHostUsesJinjaEditor"
+                "dev.dbt.intellij.DbtProjectEditorTest.testRealTextmateHostUsesJinjaEditor",
             )
             excludeTestsMatching(
-                "dev.dbt.intellij.DbtProjectEditorTest.testOrdinarySqlUsesAutomaticDetectionWithoutFileTypeOverrides"
+                "dev.dbt.intellij.DbtProjectEditorTest.testOrdinarySqlUsesAutomaticDetectionWithoutFileTypeOverrides",
             )
         }
     }

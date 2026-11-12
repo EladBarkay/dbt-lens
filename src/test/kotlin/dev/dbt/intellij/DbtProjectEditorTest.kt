@@ -148,7 +148,7 @@ class DbtProjectEditorTest : BasePlatformTestCase() {
                 info.any {
                     it.forcedTextAttributesKey == DbtAnnotator.CALL &&
                         it.startOffset == calls.first().textOffset
-                }
+                },
             )
         }
 
@@ -172,7 +172,7 @@ class DbtProjectEditorTest : BasePlatformTestCase() {
                     .trimIndent(),
             )
         assertEmpty(
-            PsiTreeUtil.findChildrenOfType(file, com.intellij.psi.PsiErrorElement::class.java)
+            PsiTreeUtil.findChildrenOfType(file, com.intellij.psi.PsiErrorElement::class.java),
         )
         val macro = LocalMacros.declarations(file).single { it.name == "agate_val_serialize" }
         val calls =
@@ -212,7 +212,7 @@ class DbtProjectEditorTest : BasePlatformTestCase() {
         assertEmpty(
             PsiTreeUtil.findChildrenOfType(shadowed, DbtVariable::class.java)
                 .filter { it.text == "agate_val_serialize" }
-                .mapNotNull { it.reference?.resolve() }
+                .mapNotNull { it.reference?.resolve() },
         )
     }
 
@@ -261,7 +261,7 @@ class DbtProjectEditorTest : BasePlatformTestCase() {
             assertEmpty(
                 PsiTreeUtil.findChildrenOfType(file, DbtVariable::class.java)
                     .filter { it.text in setOf("edr_type_timestamp", "hidden", "dispatch") }
-                    .mapNotNull { it.reference?.resolve() }
+                    .mapNotNull { it.reference?.resolve() },
             )
         }
 

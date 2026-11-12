@@ -44,7 +44,7 @@ class DbtDispatchYamlTest : BasePlatformTestCase() {
 
     fun testLiteralSearchOrderOverridesDefaultPackagesAndPreservesAllAdapterOptions() {
         setup(
-            "name: warehouse\ndispatch:\n  - macro_namespace: utils\n    search_order: ['shim', 'utils']\n"
+            "name: warehouse\ndispatch:\n  - macro_namespace: utils\n    search_order: ['shim', 'utils']\n",
         )
         macro("warehouse", "default__format_value")
         val shim = macro("warehouse/dbt_packages/shim", "default__format_value")
@@ -61,7 +61,7 @@ class DbtDispatchYamlTest : BasePlatformTestCase() {
     fun testBlockSearchOrderUpdatesFromCommittedUnsavedRootConfig() {
         val config =
             setup(
-                "name: warehouse\ndispatch:\n  - macro_namespace: utils\n    search_order:\n      - utils\n      - shim\n"
+                "name: warehouse\ndispatch:\n  - macro_namespace: utils\n    search_order:\n      - utils\n      - shim\n",
             )
         val def = macro("warehouse/dbt_packages/utils", "default__format_value")
         val shim = macro("warehouse/dbt_packages/shim", "default__format_value")
@@ -71,7 +71,7 @@ class DbtDispatchYamlTest : BasePlatformTestCase() {
             PsiDocumentManager.getInstance(project)
                 .getDocument(config)!!
                 .setText(
-                    "name: warehouse\ndispatch:\n  - macro_namespace: utils\n    search_order: [shim]\n"
+                    "name: warehouse\ndispatch:\n  - macro_namespace: utils\n    search_order: [shim]\n",
                 )
         }
         PsiDocumentManager.getInstance(project).commitAllDocuments()
@@ -83,13 +83,13 @@ class DbtDispatchYamlTest : BasePlatformTestCase() {
         val packageConfig =
             com.intellij.psi.PsiManager.getInstance(project)
                 .findFile(
-                    myFixture.findFileInTempDir("warehouse/dbt_packages/utils/dbt_project.yml")
+                    myFixture.findFileInTempDir("warehouse/dbt_packages/utils/dbt_project.yml"),
                 )!!
         WriteCommandAction.runWriteCommandAction(project) {
             PsiDocumentManager.getInstance(project)
                 .getDocument(packageConfig)!!
                 .setText(
-                    "name: utils\ndispatch:\n  - macro_namespace: utils\n    search_order: [shim]\n"
+                    "name: utils\ndispatch:\n  - macro_namespace: utils\n    search_order: [shim]\n",
                 )
         }
         PsiDocumentManager.getInstance(project).commitAllDocuments()
@@ -110,7 +110,7 @@ class DbtDispatchYamlTest : BasePlatformTestCase() {
                 PsiDocumentManager.getInstance(project)
                     .getDocument(config)!!
                     .setText(
-                        "name: warehouse\ndispatch:\n  - macro_namespace: utils\n    search_order: $order\n"
+                        "name: warehouse\ndispatch:\n  - macro_namespace: utils\n    search_order: $order\n",
                     )
             }
             PsiDocumentManager.getInstance(project).commitAllDocuments()
@@ -120,7 +120,7 @@ class DbtDispatchYamlTest : BasePlatformTestCase() {
             PsiDocumentManager.getInstance(project)
                 .getDocument(config)!!
                 .setText(
-                    "name: warehouse\ndispatch:\n  - macro_namespace: utils\n    search_order: [utils]\n  - macro_namespace: utils\n    search_order: [utils]\n"
+                    "name: warehouse\ndispatch:\n  - macro_namespace: utils\n    search_order: [utils]\n  - macro_namespace: utils\n    search_order: [utils]\n",
                 )
         }
         PsiDocumentManager.getInstance(project).commitAllDocuments()

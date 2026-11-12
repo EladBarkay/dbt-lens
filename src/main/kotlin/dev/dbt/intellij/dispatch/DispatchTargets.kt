@@ -57,7 +57,7 @@ object DispatchTargets {
                         { it.second.adapter != "default" },
                         { it.second.adapter },
                         { it.first },
-                    )
+                    ),
                 )
         return packages
             .flatMap { namespace ->

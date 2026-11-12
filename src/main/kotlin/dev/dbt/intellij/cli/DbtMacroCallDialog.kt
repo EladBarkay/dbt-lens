@@ -33,7 +33,7 @@ internal class DbtMacroCallDialog(project: Project, calls: Map<String, String>) 
             add(JBScrollPane(call), BorderLayout.CENTER)
             add(
                 JLabel(
-                    "Supply the invocation and arguments. Compilation may query the selected warehouse."
+                    "Supply the invocation and arguments. Compilation may query the selected warehouse.",
                 ),
                 BorderLayout.SOUTH,
             )

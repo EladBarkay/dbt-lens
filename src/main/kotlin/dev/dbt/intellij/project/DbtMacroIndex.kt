@@ -20,7 +20,7 @@ class DbtMacroIndex : ScalarIndexExtension<String>() {
     override fun getIndexer() =
         DataIndexer<String, Void, FileContent> { content ->
             dev.dbt.intellij.lang.DbtDeclarations.scan(content.contentAsText, "macro").associateTo(
-                linkedMapOf<String, Void?>()
+                linkedMapOf<String, Void?>(),
             ) {
                 it.name to null
             }

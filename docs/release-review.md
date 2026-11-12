@@ -115,7 +115,7 @@ than relying on the first successful pass.
 
 ## CI/CD and supply-chain assessment
 
-The wrapper is upgraded to Gradle 9.3.0, within the pinned compiler's supported range and
+The wrapper is upgraded to Gradle 9.9.0, within the pinned compiler's supported range and
 with official Java 25 support. Its distribution has a checksum; compiler, platform plugin, formatter and IDE SDKs
 are pinned. GitHub Actions reference release tags, except in the secret-holding Marketplace job, which pins
 commit SHAs (both updated by Dependabot). Checkout does not persist credentials,

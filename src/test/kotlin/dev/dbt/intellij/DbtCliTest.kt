@@ -244,8 +244,8 @@ if '--inline' in args:
                         DbtCommandKind.COMPILE,
                         context(file),
                         DbtCommandPlanner.selector("warehouse", "models/orders.sql"),
-                    )
-                )
+                    ),
+                ),
             )
             done()
             assertEquals(DbtCliPhase.SUCCEEDED, cli.state.phase)
@@ -302,8 +302,8 @@ if '--inline' in args:
                     DbtCommandKind.COMPILE,
                     context(file),
                     DbtCommandPlanner.selector("warehouse", "models/orders.sql"),
-                )
-            )
+                ),
+            ),
         )
         done()
         assertEquals(DbtCliPhase.SUCCEEDED, cli.state.phase)
@@ -328,7 +328,7 @@ if '--inline' in args:
         myFixture.configureFromExistingVirtualFile(file.virtualFile)
         com.intellij.openapi.command.WriteCommandAction.runWriteCommandAction(project) {
             myFixture.editor.document.setText(
-                "{% macro helper() %}1{% endmacro %}\nselect {{ helper() }}"
+                "{% macro helper() %}1{% endmacro %}\nselect {{ helper() }}",
             )
         }
         val panel = DbtArtifactPanel(project)
@@ -371,8 +371,8 @@ if '--inline' in args:
                         invocation = "{{ warehouse.build(7) }}",
                         sourcePath = macro.virtualFile.path,
                         resourceId = "macro.warehouse.build",
-                    )
-                )
+                    ),
+                ),
             )
             done()
             assertEquals(DbtCliPhase.SUCCEEDED, cli.state.phase)

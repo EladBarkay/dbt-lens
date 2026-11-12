@@ -34,7 +34,7 @@ internal object BoundedFiles {
                             buffer,
                             offset,
                             minOf(length.toLong(), limit - consumed + 1).toInt(),
-                        )
+                        ),
                     )
                 }
             }

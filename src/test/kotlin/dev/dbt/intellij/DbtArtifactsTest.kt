@@ -294,7 +294,7 @@ class DbtArtifactsTest : BasePlatformTestCase() {
             .addProperty("compiled", false)
         Files.writeString(request.target!!.resolve("manifest.json"), json.toString())
         assertNull(
-            ArtifactReader.compiled(request, saved(file).nodes.getValue("model.warehouse.other"))
+            ArtifactReader.compiled(request, saved(file).nodes.getValue("model.warehouse.other")),
         )
     }
 
@@ -312,7 +312,7 @@ class DbtArtifactsTest : BasePlatformTestCase() {
                             JsonArray().apply { add(obj("name" to "value", "type" to "string")) },
                         )
                     },
-                )
+                ),
             )
         val source = myFixture.addFileToProject("repo/warehouse/models/orders.sql", "select 1")
         val macros =
@@ -332,7 +332,7 @@ class DbtArtifactsTest : BasePlatformTestCase() {
             ArtifactReader.compiled(
                 service.request(file)!!,
                 snapshot.nodes.getValue("macro.warehouse.format"),
-            )
+            ),
         )
     }
 
@@ -475,7 +475,7 @@ class DbtArtifactsTest : BasePlatformTestCase() {
                     node("raw_orders", "source", path = "models/schema.yml").apply {
                         addProperty("source_name", "raw")
                     },
-                )
+                ),
             )
         val orders = myFixture.addFileToProject("repo/warehouse/models/orders.sql", "select 1")
         myFixture.configureFromExistingVirtualFile(orders.virtualFile)
@@ -505,7 +505,7 @@ class DbtArtifactsTest : BasePlatformTestCase() {
             val request = service.request(file)!!
             assertTrue(
                 Files.readString(request.target!!.resolve("manifest.json"))
-                    .contains("select 1 as order_id")
+                    .contains("select 1 as order_id"),
             )
         } finally {
             com.intellij.openapi.util.Disposer.dispose(panel)
@@ -517,7 +517,7 @@ class DbtArtifactsTest : BasePlatformTestCase() {
             manifest(
                 node("first", "macro", path = "macros/shared.sql"),
                 node("second", "macro", path = "macros/shared.sql"),
-            )
+            ),
         )
         val macros =
             myFixture.addFileToProject(
@@ -637,8 +637,8 @@ class DbtArtifactsTest : BasePlatformTestCase() {
                                 )
                             },
                         )
-                    }
-                )
+                    },
+                ),
             )
         change(file, "{{ source('raw', 'customers') }}")
         myFixture.addFileToProject(
@@ -648,7 +648,8 @@ class DbtArtifactsTest : BasePlatformTestCase() {
                     add(
                         "metadata",
                         obj(
-                            "dbt_schema_version" to "https://schemas.getdbt.com/dbt/catalog/v1.json"
+                            "dbt_schema_version" to
+                                "https://schemas.getdbt.com/dbt/catalog/v1.json",
                         ),
                     )
                     add("errors", array("Warehouse metadata lookup failed"))
@@ -671,8 +672,8 @@ class DbtArtifactsTest : BasePlatformTestCase() {
                     node("orders", path = "models/orders.py").apply {
                         addProperty("language", "python")
                         addProperty("compiled_code", "def model(dbt, session): pass")
-                    }
-                )
+                    },
+                ),
             )
         val request = service.request(file)!!
         assertNull(ArtifactReader.compiled(request, saved(file).nodes.values.single()))
@@ -689,7 +690,7 @@ class DbtArtifactsTest : BasePlatformTestCase() {
             )
             assertFalse(saved(file).valid)
             assertTrue(
-                saved(file).messages.single().contains("inside the dbt project's output directory")
+                saved(file).messages.single().contains("inside the dbt project's output directory"),
             )
         } finally {
             Files.deleteIfExists(request.target!!.resolve("manifest.json"))
@@ -727,7 +728,7 @@ class DbtArtifactsTest : BasePlatformTestCase() {
                             JsonObject().apply { add("nodes", array("model.warehouse.orders")) },
                         )
                     },
-                )
+                ),
             )
         myFixture.addFileToProject("repo/warehouse/models/orders.sql", "select 2")
         val snapshot = saved(file)
@@ -742,7 +743,7 @@ class DbtArtifactsTest : BasePlatformTestCase() {
             assertTrue(pane.text.contains("Description"))
             assertFalse(pane.text.contains(">Type<"))
             assertTrue(
-                ArtifactDocumentation.body(file, resource, snapshot).contains("Source has changed")
+                ArtifactDocumentation.body(file, resource, snapshot).contains("Source has changed"),
             )
             for (width in listOf(360, 800)) {
                 pane.setSize(width, 1000)
@@ -783,7 +784,7 @@ class DbtArtifactsTest : BasePlatformTestCase() {
             manifest(
                 node("first").apply { addProperty("compiled_code", "select 1") },
                 node("second").apply { addProperty("compiled_code", "select 2") },
-            )
+            ),
         )
         val first = myFixture.addFileToProject("repo/warehouse/models/first.sql", "select 1")
         val second = myFixture.addFileToProject("repo/warehouse/models/second.sql", "select 2")

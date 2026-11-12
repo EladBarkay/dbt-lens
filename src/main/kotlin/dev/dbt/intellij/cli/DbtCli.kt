@@ -131,7 +131,7 @@ class DbtCli(private val project: Project) : Disposable {
                     KillableProcessHandler(line)
                 } catch (_: com.intellij.execution.ExecutionException) {
                     throw IllegalArgumentException(
-                        "Unable to start dbt. Check the executable and environment in dbt Lens settings."
+                        "Unable to start dbt. Check the executable and environment in dbt Lens settings.",
                     )
                 }
             handler.setShouldKillProcessSoftly(false)
@@ -146,7 +146,7 @@ class DbtCli(private val project: Project) : Disposable {
                             update(run) { it.copy(output = output.text) }
                         }
                     }
-                }
+                },
             )
             indicator.text = "${run.command.kind.title} · ${plan.directory.fileName}"
             handler.startNotify()
