@@ -476,8 +476,6 @@ The local run is offline: it does not fetch missing optional dependency variants
 SDK modules can produce layout warnings. The minimal/free-host runtime suites complement that
 binary result. CI runs the online verifier against both pinned IDE distributions.
 
-Local 1.0.0 reports are retained under `/private/tmp/dbt-lens-100-validation/*-release`, with
-logs named `/private/tmp/dbt-lens-100-release-*.log`; those machine-local files are not shipped.
 GitHub CI retains per-configuration test reports, binary verification reports and the baseline
 ZIP/checksum. Both workflow files pass actionlint **1.7.12**; XML descriptors and JSON schemas
 parse, and all bundled schema references remain internal/offline. The tag-to-draft workflow
@@ -494,8 +492,8 @@ during reading and reverse-index construction.
 
 The prior dbt Core/DuckDB smoke remains historical evidence. No new interactive user-IDE,
 large-project benchmark, Windows, Fusion or external warehouse-adapter qualification is claimed.
-The current private repository plan does not allow branch protection; checks-before-merge is
-a documented maintainer requirement rather than an enforced repository rule.
+Since the repository became public, `main` is protected: the four editor configurations and the
+Plugin Verifier must pass before a merge, and force pushes and deletion are blocked.
 
 ## Next independently testable milestones
 

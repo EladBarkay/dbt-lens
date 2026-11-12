@@ -68,7 +68,7 @@ Results against an SDK outside the CI matrix are experiments, not compatibility 
 1. Branch from `main` and keep the change focused.
 2. Run `./gradlew ktfmtFormat check` before pushing.
 3. Add an entry to `CHANGELOG.md` for user-visible changes.
-4. All CI checks must pass before merging.
+4. All CI checks must pass before merging; `main` is protected and enforces this.
 
 ## Releasing
 
@@ -76,13 +76,14 @@ Results against an SDK outside the CI matrix are experiments, not compatibility 
    That section becomes the Marketplace change notes.
 2. Merge the release PR, then tag that commit `vX.Y.Z` and push the tag.
 3. CI rebuilds, verifies and creates a **draft** GitHub release with the ZIP and its SHA-256 checksum.
-4. Review the draft, then publish it. Publishing signs the same ZIP and uploads it to the JetBrains
-   Marketplace. Mark the release as a pre-release to target the `eap` channel instead.
+4. Review the draft, then publish it. After you approve the `marketplace` deployment, the workflow signs
+   the same ZIP and uploads it to the JetBrains Marketplace. Mark the release as a pre-release to target
+   the `eap` channel instead. Version tags can't be moved or deleted once pushed.
 
 ### Marketplace setup
 
 The publish job uses secrets stored in the `marketplace` GitHub environment, which only accepts runs
-from `v*.*.*` tags. Set each one with `gh secret set NAME --env marketplace`:
+from `v*.*.*` tags and waits for a maintainer's approval before it starts. Set each one with `gh secret set NAME --env marketplace`:
 
 | Secret | Value |
 | --- | --- |
