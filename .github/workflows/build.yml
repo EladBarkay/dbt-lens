@@ -54,11 +54,11 @@ jobs:
       - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
-      - uses: actions/setup-java@v6.0.1
+      - uses: actions/setup-java@v6.2.0
         with:
           distribution: temurin
           java-version: ${{ matrix.java }}
-      - uses: gradle/actions/setup-gradle@v6.4.0
+      - uses: gradle/actions/setup-gradle@v6.4.1
       - name: Test, format and package
         run: >-
           ./gradlew check verifyPluginProjectConfiguration verifyPluginStructure buildPlugin
@@ -90,17 +90,17 @@ jobs:
       - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
-      - uses: actions/setup-java@v6.0.1
+      - uses: actions/setup-java@v6.2.0
         id: baseline-java
         with:
           distribution: temurin
           java-version: '21'
-      - uses: actions/setup-java@v6.0.1
+      - uses: actions/setup-java@v6.2.0
         id: verifier-java
         with:
           distribution: temurin
           java-version: '25'
-      - uses: gradle/actions/setup-gradle@v6.4.0
+      - uses: gradle/actions/setup-gradle@v6.4.1
       - name: Verify supported IDE binaries
         run: >-
           ./gradlew verifyPlugin -PverifySupportedIdes=true
