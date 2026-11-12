@@ -63,6 +63,7 @@ jobs:
           -PplatformType=${{ matrix.platform }} -PplatformVersion=${{ matrix.version }}
           -PwithSqlTests=${{ matrix.sql }} -PwithTextmateTests=${{ matrix.textmate }}
           -PwithYamlTests=${{ matrix.yaml }} -PfreeEditionTests=${{ matrix.free }}
+          -PskipSearchableOptions=${{ matrix.name != 'sql' }}
           --console=plain
       - name: Package checksum
         if: matrix.name == 'sql'
@@ -95,7 +96,7 @@ jobs:
           extra-java-version: '21'
       - name: Verify supported IDE binaries
         run: >-
-          ./gradlew verifyPlugin -PverifySupportedIdes=true
+          ./gradlew verifyPlugin -PverifySupportedIdes=true -PskipSearchableOptions=true
           -Porg.gradle.java.installations.paths="${{ steps.setup.outputs.java-installations }}"
           --console=plain
       - uses: actions/upload-artifact@v7.0.2
