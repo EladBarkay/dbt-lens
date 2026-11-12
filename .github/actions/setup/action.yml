@@ -1,0 +1,40 @@
+name: Set up build
+description: Free runner disk space, install the requested JDKs and configure Gradle.
+inputs:
+  java-version:
+    description: JDK version used to run Gradle.
+    required: true
+  extra-java-version:
+    description: Optional second JDK; both paths are passed to Gradle as toolchain installations.
+    required: false
+    default: ''
+outputs:
+  java-installations:
+    description: Comma-separated paths of the installed JDKs.
+    value: ${{ steps.paths.outputs.value }}
+runs:
+  using: composite
+  steps:
+    - name: Free runner disk space
+      shell: bash
+      run: |
+        sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL
+        df -h /
+    - uses: actions/setup-java@v6.2.0
+      if: inputs.extra-java-version != ''
+      id: extra-java
+      with:
+        distribution: temurin
+        java-version: ${{ inputs.extra-java-version }}
+    - uses: actions/setup-java@v6.2.0
+      id: java
+      with:
+        distribution: temurin
+        java-version: ${{ inputs.java-version }}
+    - id: paths
+      shell: bash
+      env:
+        PRIMARY: ${{ steps.java.outputs.path }}
+        EXTRA: ${{ steps.extra-java.outputs.path }}
+      run: echo "value=${EXTRA:+$EXTRA,}$PRIMARY" >> "$GITHUB_OUTPUT"
+    - uses: gradle/actions/setup-gradle@v6.4.1
