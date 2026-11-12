@@ -34,7 +34,7 @@ usages in action.
 
 - **Highlighting**: Jinja and SQL are colored independently. SQL coloring is lexical (keywords, strings,
   comments, numbers), not dialect-aware. Colors are under
-  **Settings → Editor → Color Scheme → dbt Lens**.
+  **Settings → Editor → Color Scheme → DBT Lens**.
 - **Parsing**: the parser preserves source exactly, recovers at the next Jinja tag after an error, and
   reports missing block ends and delimiters. It supports inline conditionals, filtered `for` loops,
   argument unpacking, slices, `+`/`-` whitespace control, `with`/`call` blocks, dbt `docs` blocks and
@@ -146,7 +146,7 @@ precedence as usual.
 | **Jinja editor** (default) | Full Jinja support with lexical SQL coloring. No SQL dialect parsing, completion or inspections. |
 | **Native SQL editor** | JetBrains' SQL editor and dialect settings. Jinja features only in `.jinja`, `.j2` and `.dbt.sql` files. |
 
-Switch under **Settings → Languages & Frameworks → dbt Lens → Keep the native SQL editor in dbt
+Switch under **Settings → Languages & Frameworks → DBT Lens → Keep the native SQL editor in dbt
 projects** (requires Database Tools), then restart the IDE. Using both at once in the same file isn't supported yet.
 
 An experimental PostgreSQL integration can be tried with `./gradlew runIde -PexperimentalSql=true`.
@@ -154,7 +154,7 @@ It isn't suitable for daily use: removing templates can produce misleading SQL e
 
 ## Saved dbt output
 
-Open a resource file, then **View → Tool Windows → dbt Lens**. The panel reads `manifest.json` and,
+Open a resource file, then **View → Tool Windows → DBT Lens**. The panel reads `manifest.json` and,
 optionally, `catalog.json` from the project's `target` directory (or a literal `target-path`).
 
 - **Compiled SQL**: the saved compiled code, read-only. Macros and Python models aren't shown as SQL.
@@ -182,7 +182,7 @@ Commands save pending edits first, show progress and output in the tool window, 
 One command runs per IDE project, and the panel refreshes when it finishes. Compilation may query your
 warehouse. Nothing runs from opening files, indexing or hovering.
 
-Configure under **Settings → Languages & Frameworks → dbt Lens**:
+Configure under **Settings → Languages & Frameworks → DBT Lens**:
 
 - **dbt executable**: leave blank to use `.venv`/`venv` in the project, then `PATH`. dbt Core 1.5+ is
   required for inline compilation.

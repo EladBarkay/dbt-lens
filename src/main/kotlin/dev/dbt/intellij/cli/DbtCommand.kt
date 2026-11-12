@@ -134,7 +134,7 @@ object DbtCommandPlanner {
                         .firstOrNull(::usable)
             }
                 ?: throw IllegalArgumentException(
-                    "dbt executable not found. Configure dbt Lens settings or install dbt in the project's virtualenv.",
+                    "dbt executable not found. Configure DBT Lens settings or install dbt in the project's virtualenv.",
                 )
         val bin = executable.parent
         val pathKey = env.keys.firstOrNull { it.equals("PATH", windows) } ?: "PATH"

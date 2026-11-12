@@ -44,7 +44,7 @@ fun interface DbtCliListener {
     fun changed(state: DbtCliState)
 
     companion object {
-        val TOPIC = Topic.create("dbt Lens command", DbtCliListener::class.java)
+        val TOPIC = Topic.create("DBT Lens command", DbtCliListener::class.java)
     }
 }
 
@@ -131,7 +131,7 @@ class DbtCli(private val project: Project) : Disposable {
                     KillableProcessHandler(line)
                 } catch (_: com.intellij.execution.ExecutionException) {
                     throw IllegalArgumentException(
-                        "Unable to start dbt. Check the executable and environment in dbt Lens settings.",
+                        "Unable to start dbt. Check the executable and environment in DBT Lens settings.",
                     )
                 }
             handler.setShouldKillProcessSoftly(false)
@@ -196,7 +196,7 @@ class DbtCli(private val project: Project) : Disposable {
             if (run.cancelled.get() || indicator.isCanceled) {
                 phase = DbtCliPhase.CANCELLED
                 message = "dbt command cancelled"
-            } else message = e.message ?: "dbt command failed. See dbt Lens settings."
+            } else message = e.message ?: "dbt command failed. See DBT Lens settings."
         } finally {
             com.intellij.openapi.progress.ProgressManager.getInstance()
                 .executeNonCancelableSection {

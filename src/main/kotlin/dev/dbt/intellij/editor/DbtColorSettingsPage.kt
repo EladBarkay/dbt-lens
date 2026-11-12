@@ -6,7 +6,7 @@ import com.intellij.openapi.options.colors.ColorSettingsPage
 import dev.dbt.intellij.lang.DbtFileType
 
 class DbtColorSettingsPage : ColorSettingsPage {
-    override fun getDisplayName() = "dbt Lens"
+    override fun getDisplayName() = "DBT Lens"
 
     override fun getIcon() = DbtFileType.INSTANCE.icon
 

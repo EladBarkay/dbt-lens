@@ -51,7 +51,7 @@ class DbtSettingsConfigurable(private val project: Project) : Configurable {
     private var profile: JTextField? = null
     private var target: JTextField? = null
 
-    override fun getDisplayName() = "dbt Lens"
+    override fun getDisplayName() = "DBT Lens"
 
     override fun createComponent() =
         JPanel().apply {
@@ -67,7 +67,7 @@ class DbtSettingsConfigurable(private val project: Project) : Configurable {
                     .also { add(it) }
             add(
                 JLabel(
-                    "Uses JetBrains dialect settings; dbt Lens Jinja features in .sql files are disabled in this mode.",
+                    "Uses JetBrains dialect settings; DBT Lens Jinja features in .sql files are disabled in this mode.",
                 ),
             )
             add(

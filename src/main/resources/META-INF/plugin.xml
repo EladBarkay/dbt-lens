@@ -1,12 +1,22 @@
 <idea-plugin>
     <id>eladbarkay.dev.dbtlens</id>
     <name>DBT Lens</name>
-    <vendor url="https://github.com/EladBarkay/dbt-lens">dbt Lens contributors</vendor>
+    <vendor url="https://github.com/EladBarkay/dbt-lens">DBT Lens contributors</vendor>
     <description><![CDATA[
-        Jinja parsing, highlighting, folding, completion, and project macro navigation
-        in SQL templates, with dbt documentation, compiled SQL previews, resource lineage,
-        and explicit local dbt manifest generation and compilation actions.
-        Native SQL integration is an experimental feasibility prototype.
+        <p>Jinja-aware editing for dbt projects. DBT Lens turns the <code>.sql</code> files in a dbt project
+        into templates the IDE understands, and works offline without running dbt.</p>
+        <ul>
+          <li><b>Jinja editing</b>: highlighting, folding, brace matching, error recovery and block templates.</li>
+          <li><b>Smart completion</b>: variables in scope, macro signatures, filters, tests and dbt objects.</li>
+          <li><b>Navigation</b>: Go to Declaration and Find Usages for macros, <code>ref()</code>, <code>source()</code>
+            and versioned models, including installed packages.</li>
+          <li><b>Adapter dispatch</b>: jump from <code>adapter.dispatch</code> to every implementation.</li>
+          <li><b>YAML assistance</b>: bundled schemas for <code>dbt_project.yml</code>, profiles, packages and property files.</li>
+          <li><b>Saved output</b>: compiled SQL, documentation and lineage from <code>manifest.json</code>.</li>
+          <li><b>dbt commands</b>: generate the manifest and compile the current resource or the whole project.</li>
+        </ul>
+        <p>Works in IntelliJ IDEA and PyCharm, including the free edition. Database Tools, TextMate and YAML
+        support are optional. DBT Lens is an independent project and is not affiliated with dbt Labs.</p>
     ]]></description>
     <depends>com.intellij.modules.platform</depends>
     <depends>com.intellij.modules.lang</depends>
@@ -18,7 +28,7 @@
         <extensionPoint qualifiedName="dev.dbt.jinja.dispatchConfiguration" interface="dev.dbt.intellij.dispatch.DispatchConfiguration" dynamic="true"/>
     </extensionPoints>
     <extensions defaultExtensionNs="com.intellij">
-        <toolWindow id="dbt Lens" anchor="right" icon="/icons/dbt.svg" factoryClass="dev.dbt.intellij.artifacts.DbtArtifactToolWindow"/>
+        <toolWindow id="DBT Lens" anchor="right" icon="/icons/dbt.svg" factoryClass="dev.dbt.intellij.artifacts.DbtArtifactToolWindow"/>
         <fileType name="dbt Jinja" language="dbt Jinja" implementationClass="dev.dbt.intellij.lang.DbtFileType"
                   fieldName="INSTANCE" extensions="jinja;j2" patterns="*.dbt.sql"/>
         <lang.parserDefinition language="dbt Jinja" implementationClass="dev.dbt.intellij.lang.DbtParserDefinition"/>
@@ -29,7 +39,7 @@
         <additionalTextAttributes scheme="Default" file="colorSchemes/DbtDefault.xml"/>
         <additionalTextAttributes scheme="Darcula" file="colorSchemes/DbtDarcula.xml"/>
         <colorSettingsPage implementation="dev.dbt.intellij.editor.DbtColorSettingsPage"/>
-        <projectConfigurable parentId="language" id="dev.dbt.lens.settings" displayName="dbt Lens" instance="dev.dbt.intellij.config.DbtSettingsConfigurable"/>
+        <projectConfigurable parentId="language" id="dev.dbt.lens.settings" displayName="DBT Lens" instance="dev.dbt.intellij.config.DbtSettingsConfigurable"/>
         <iconProvider implementation="dev.dbt.intellij.config.DbtYamlIconProvider"/>
         <gotoDeclarationHandler implementation="dev.dbt.intellij.dispatch.DispatchNavigationHandler"/>
         <referencesSearch implementation="dev.dbt.intellij.dispatch.DispatchUsageSearcher"/>
