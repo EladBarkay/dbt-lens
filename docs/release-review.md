@@ -117,7 +117,8 @@ than relying on the first successful pass.
 
 The wrapper is upgraded to Gradle 9.3.0, within the pinned compiler's supported range and
 with official Java 25 support. Its distribution has a checksum; compiler, platform plugin, formatter and IDE SDKs
-are pinned. GitHub Actions reference release tags (updated by Dependabot), checkout does not persist credentials,
+are pinned. GitHub Actions reference release tags, except in the secret-holding Marketplace job, which pins
+commit SHAs (both updated by Dependabot). Checkout does not persist credentials,
 and ordinary checks have read-only repository permissions. Weekly grouped dependency PRs
 must pass the same matrix. Tests use isolated process fixtures instead of user credentials.
 
@@ -130,7 +131,8 @@ environment-specific build metadata means cross-platform byte-identical ZIPs are
 A version tag reuses the full checks. Only the later draft job receives contents-write access.
 It requires a semantic version tag, a commit already in main, the expected versioned ZIP and
 a matching checksum before creating a draft. Only publishing that draft starts the separate
-Marketplace workflow, which signs and uploads the checked ZIP with repository secrets.
+Marketplace workflow, which signs and uploads the checked ZIP with secrets scoped to a
+`marketplace` environment that accepts only version tags. Its actions are pinned to commit SHAs.
 
 The current private repository plan rejects branch-protection configuration. Consequently,
 checks-before-merge remains a documented owner rule; it is not represented as server-enforced

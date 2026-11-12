@@ -47,8 +47,9 @@ Do not present fixture results as Windows, Fusion or live-adapter qualification.
 ## Marketplace publication
 
 The Marketplace workflow runs only when a release is published. It re-checks the draft's checksum,
-signs that ZIP without rebuilding it, verifies the signature and uploads it. It needs these
-repository secrets:
+signs that ZIP without rebuilding it, verifies the signature and uploads it. Its secrets are stored in
+the `marketplace` environment, which only accepts runs from `v*.*.*` tags; set them with
+`gh secret set NAME --env marketplace`:
 
 | Secret | Value |
 | --- | --- |
@@ -64,6 +65,9 @@ repository:
 openssl genpkey -aes-256-cbc -algorithm RSA -out private.pem -pkeyopt rsa_keygen_bits:4096
 openssl req -key private.pem -new -x509 -days 3650 -out chain.crt
 ```
+
+Because this job holds the signing key and token, its actions stay pinned to full commit SHAs (other
+workflows use release tags). Dependabot updates the SHA and version comment together.
 
 The first version must be uploaded manually through the Marketplace website (it uses the same ZIP from
 the draft release) and approved by JetBrains review before `publishPlugin` can update the plugin.
