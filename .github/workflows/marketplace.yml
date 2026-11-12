@@ -1,0 +1,45 @@
+name: Marketplace publication
+on:
+  release:
+    types: [published]
+permissions:
+  contents: read
+concurrency:
+  group: marketplace-${{ github.event.release.tag_name }}
+  cancel-in-progress: false
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.release.tag_name }}
+          persist-credentials: false
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+      - name: Download checked release package
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          [[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          grep -q "^version = \"${RELEASE_TAG#v}\"$" build.gradle.kts
+          gh release download "$RELEASE_TAG" --dir assets --pattern '*.zip' --pattern SHA256SUMS
+          (cd assets && sha256sum --check SHA256SUMS)
+          test -f "assets/dbt-lens-${RELEASE_TAG#v}.zip"
+      - name: Sign, verify and publish
+        env:
+          CERTIFICATE_CHAIN: ${{ secrets.CERTIFICATE_CHAIN }}
+          PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
+          PRIVATE_KEY_PASSWORD: ${{ secrets.PRIVATE_KEY_PASSWORD }}
+          PUBLISH_TOKEN: ${{ secrets.PUBLISH_TOKEN }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          CHANNEL: ${{ github.event.release.prerelease && 'eap' || 'default' }}
+        run: >-
+          ./gradlew verifyPluginSignature publishPlugin -x buildPlugin
+          -PreleaseArchive="assets/dbt-lens-${RELEASE_TAG#v}.zip" -PpublishChannel="$CHANNEL"
+          --console=plain

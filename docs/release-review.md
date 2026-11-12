@@ -128,8 +128,8 @@ environment-specific build metadata means cross-platform byte-identical ZIPs are
 
 A version tag reuses the full checks. Only the later draft job receives contents-write access.
 It requires a semantic version tag, a commit already in main, the expected versioned ZIP and
-a matching checksum before creating a draft. It does not publish to the Marketplace. Release
-signing/Marketplace credentials require a separately authorized setup.
+a matching checksum before creating a draft. Only publishing that draft starts the separate
+Marketplace workflow, which signs and uploads the checked ZIP with repository secrets.
 
 The current private repository plan rejects branch-protection configuration. Consequently,
 checks-before-merge remains a documented owner rule; it is not represented as server-enforced

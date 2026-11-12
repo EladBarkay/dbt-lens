@@ -12,6 +12,7 @@
 - Add minimal-host and free-PyCharm CI, binary compatibility verification, pinned Actions,
   dependency updates, checksummed draft releases, Apache-2.0 licensing and maintenance guidance.
 - Upgrade the checked Gradle wrapper to support Java 25 and explicitly provide both verification toolchains.
+- Add Marketplace listing metadata and a signed publication workflow for reviewed releases.
 
 ## 0.2.4 — Local dbt compilation
 

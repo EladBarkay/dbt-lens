@@ -41,8 +41,34 @@ Do not present fixture results as Windows, Fusion or live-adapter qualification.
 2. Open a PR to main. Require all four editor configurations and Plugin Verifier to pass on its head.
 3. Merge the reviewed PR, then create a matching `vX.Y.Z` tag on that commit.
 4. The tag rebuilds and verifies the source and creates a draft with its ZIP and checksum.
-5. Review the draft and qualification limits before publishing. Marketplace publication and signing
-   need a separate setup; no Marketplace token is used by this repository's workflows.
+5. Review the draft and qualification limits before publishing. Publishing the GitHub release signs the
+   checked ZIP and uploads it to the Marketplace; marking it as a pre-release targets the `eap` channel.
+
+## Marketplace publication
+
+The Marketplace workflow runs only when a release is published. It re-checks the draft's checksum,
+signs that ZIP without rebuilding it, verifies the signature and uploads it. It needs these
+repository secrets:
+
+| Secret | Value |
+| --- | --- |
+| `CERTIFICATE_CHAIN` | PEM certificate chain (`chain.crt`) |
+| `PRIVATE_KEY` | Encrypted PEM private key (`private.pem`) |
+| `PRIVATE_KEY_PASSWORD` | The private key's password |
+| `PUBLISH_TOKEN` | A Marketplace token from **My Tokens** |
+
+A self-signed certificate is sufficient; Marketplace adds its own signature. Keep the key outside the
+repository:
+
+```sh
+openssl genpkey -aes-256-cbc -algorithm RSA -out private.pem -pkeyopt rsa_keygen_bits:4096
+openssl req -key private.pem -new -x509 -days 3650 -out chain.crt
+```
+
+The first version must be uploaded manually through the Marketplace website (it uses the same ZIP from
+the draft release) and approved by JetBrains review before `publishPlugin` can update the plugin.
+The plugin ID cannot change after that first upload. Marketplace change notes are generated from this
+version's CHANGELOG.md section.
 
 The current private repository plan does not expose branch protection. Maintain the checks-before-merge
 rule manually unless repository permissions/plan are changed; the draft-release workflow still enforces
