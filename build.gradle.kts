@@ -136,6 +136,11 @@ tasks.verifyPluginSignature {
     dependsOn(tasks.signPlugin)
 }
 
+tasks.publishPlugin {
+    archiveFiles.setFrom(tasks.signPlugin.flatMap { it.signedArchiveFile })
+    dependsOn(tasks.verifyPluginSignature)
+}
+
 tasks.verifyPlugin {
     if (providers.gradleProperty("verifierOffline").orNull == "true") offline = true
 }
