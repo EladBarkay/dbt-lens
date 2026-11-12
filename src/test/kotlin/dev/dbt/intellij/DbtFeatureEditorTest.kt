@@ -1,7 +1,7 @@
 package dev.dbt.intellij
 
-import com.intellij.codeInsight.documentation.DocumentationManager
 import com.intellij.codeInsight.folding.CodeFoldingManager
+import com.intellij.lang.LanguageDocumentation
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.roots.ModuleRootModificationUtil
 import com.intellij.psi.PsiDocumentManager
@@ -103,7 +103,7 @@ class DbtFeatureEditorTest : BasePlatformTestCase() {
         assertEquals("helper.sql", serialize.first().reference!!.resolve()!!.containingFile.name)
         assertNull(calls().single { it.text == "hidden" }.reference)
         val docs =
-            DocumentationManager.getProviderFromElement(serialize.first())
+            LanguageDocumentation.INSTANCE.forLanguage(serialize.first().language)
                 .generateDoc(serialize.first(), serialize.first())!!
         assertTrue(docs.contains("macro serialize(value)"))
         assertTrue(docs.contains("Converts &lt;value&gt; &amp; preserves nulls."))
@@ -199,7 +199,8 @@ class DbtFeatureEditorTest : BasePlatformTestCase() {
                 .trimIndent(),
         )
         val call = calls().last { it.text == "example" }
-        val docs = DocumentationManager.getProviderFromElement(call).generateDoc(call, call)!!
+        val docs =
+            LanguageDocumentation.INSTANCE.forLanguage(call.language).generateDoc(call, call)!!
         assertTrue(docs.contains("Reads &lt;value&gt;."))
         val colors = myFixture.doHighlighting()
         assertTrue(
@@ -284,7 +285,8 @@ class DbtFeatureEditorTest : BasePlatformTestCase() {
         myFixture.configureByText(DbtFileType.INSTANCE, source)
         val docs =
             calls().associate {
-                it.text to DocumentationManager.getProviderFromElement(it).generateDoc(it, it)!!
+                it.text to
+                    LanguageDocumentation.INSTANCE.forLanguage(it.language).generateDoc(it, it)!!
             }
         assertTrue(docs.getValue("first").contains("Above &lt;first&gt;."))
         assertFalse(docs.getValue("first").contains("Below"))
