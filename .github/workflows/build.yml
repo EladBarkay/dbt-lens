@@ -51,18 +51,12 @@ jobs:
             yaml: true
             free: true
     steps:
-      - name: Free runner disk space
-        run: |
-          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL
-          df -h /
       - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
-      - uses: actions/setup-java@v6.2.0
+      - uses: ./.github/actions/setup
         with:
-          distribution: temurin
           java-version: ${{ matrix.java }}
-      - uses: gradle/actions/setup-gradle@v6.4.1
       - name: Test, format and package
         run: >-
           ./gradlew check verifyPluginProjectConfiguration verifyPluginStructure buildPlugin
@@ -91,28 +85,18 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - name: Free runner disk space
-        run: |
-          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL
-          df -h /
       - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
-      - uses: actions/setup-java@v6.2.0
-        id: baseline-java
+      - uses: ./.github/actions/setup
+        id: setup
         with:
-          distribution: temurin
-          java-version: '21'
-      - uses: actions/setup-java@v6.2.0
-        id: verifier-java
-        with:
-          distribution: temurin
           java-version: '25'
-      - uses: gradle/actions/setup-gradle@v6.4.1
+          extra-java-version: '21'
       - name: Verify supported IDE binaries
         run: >-
           ./gradlew verifyPlugin -PverifySupportedIdes=true
-          -Porg.gradle.java.installations.paths="${{ steps.baseline-java.outputs.path }},${{ steps.verifier-java.outputs.path }}"
+          -Porg.gradle.java.installations.paths="${{ steps.setup.outputs.java-installations }}"
           --console=plain
       - uses: actions/upload-artifact@v7.0.2
         if: always()
