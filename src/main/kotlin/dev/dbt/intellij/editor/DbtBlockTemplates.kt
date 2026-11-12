@@ -40,7 +40,7 @@ object DbtBlockTemplates {
                 .takeWhile { it == ' ' || it == '\t' }
                 .toString()
         val manager = TemplateManager.getInstance(context.project)
-        val template = manager.createTemplate("", "dbt Lens")
+        val template = manager.createTemplate("", "DBT Lens")
         fun variable(name: String, default: String) {
             template.addVariable(name, TextExpression(default), TextExpression(default), true)
         }

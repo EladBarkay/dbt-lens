@@ -2,6 +2,14 @@
 
 All notable changes to DBT Lens are listed here. Versions follow [semantic versioning](https://semver.org).
 
+## 1.0.1 — Listing and naming polish
+
+- Every name shown in the IDE now reads **DBT Lens**: the settings and color scheme pages, the tool
+  window, YAML schema names and messages. The tool window returns to its default position once;
+  saved settings are kept.
+- New Marketplace description listing the plugin's features.
+- First release signed with the project's own key and published automatically.
+
 ## 1.0.0 — First Marketplace release
 
 - New plugin name and ID: **DBT Lens** (`eladbarkay.dev.dbtlens`). Uninstall earlier builds that used

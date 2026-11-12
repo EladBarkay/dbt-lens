@@ -16,7 +16,7 @@ class DbtSchemaProviderFactory : JsonSchemaProviderFactory, DumbAware {
                     override fun isAvailable(file: VirtualFile) =
                         DbtYamlFiles.schema(project, file) == schema
 
-                    override fun getName() = "dbt Lens: $schema"
+                    override fun getName() = "DBT Lens: $schema"
 
                     override fun getSchemaFile(): VirtualFile? =
                         JsonSchemaProviderFactory.getResourceFile(

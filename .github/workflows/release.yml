@@ -36,4 +36,4 @@ jobs:
           RELEASE_TAG: ${{ github.ref_name }}
         run: >-
           gh release create "$RELEASE_TAG" assets/*.zip assets/SHA256SUMS
-          --verify-tag --draft --generate-notes --title "dbt Lens ${RELEASE_TAG#v}"
+          --verify-tag --draft --generate-notes --title "DBT Lens ${RELEASE_TAG#v}"

@@ -145,7 +145,7 @@ class DbtArtifactPanel(private val project: Project) : JPanel(BorderLayout()), D
                     JButton("dbt settings").apply {
                         addActionListener {
                             com.intellij.openapi.options.ShowSettingsUtil.getInstance()
-                                .showSettingsDialog(project, "dbt Lens")
+                                .showSettingsDialog(project, "DBT Lens")
                         }
                     },
                 )
