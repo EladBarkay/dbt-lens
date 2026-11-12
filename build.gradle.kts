@@ -89,6 +89,8 @@ object ChangeNotes {
 }
 
 intellijPlatform {
+    buildSearchableOptions =
+        providers.gradleProperty("skipSearchableOptions").map { it != "true" }.orElse(true)
     pluginConfiguration {
         name = "DBT Lens"
         ideaVersion { sinceBuild = "253" }
