@@ -336,6 +336,15 @@ class DbtArtifactsTest : BasePlatformTestCase() {
         )
     }
 
+    fun testTrailingNewlineIsNotASourceChange() {
+        val file = setup(manifest(node("orders", raw = "select 1")))
+        val source = myFixture.addFileToProject("repo/warehouse/models/orders.sql", "select 1\n")
+        val snapshot = saved(file)
+        assertFalse(service.changed(file, snapshot.nodes.getValue("model.warehouse.orders")))
+        change(source, "select 2\n")
+        assertTrue(service.changed(file, snapshot.nodes.getValue("model.warehouse.orders")))
+    }
+
     fun testCacheRefreshesAfterExternalReplacementDeletionAndRecreation() {
         val file = setup(manifest(node("orders")))
         val request = service.request(file)!!
