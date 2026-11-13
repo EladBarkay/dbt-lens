@@ -204,6 +204,9 @@ class DbtArtifacts(private val project: Project) : Disposable {
                 dev.dbt.intellij.psi.LocalMacros.candidates(psi, node.name).singleOrNull()?.text
                     ?: return true
             else psi.text
-        return current.replace("\r\n", "\n") != raw.replace("\r\n", "\n")
+        return normalizedSource(current) != normalizedSource(raw)
     }
+
+    // dbt stores raw_code with surrounding whitespace stripped, including the file's final newline.
+    private fun normalizedSource(text: String) = text.replace("\r\n", "\n").trim()
 }

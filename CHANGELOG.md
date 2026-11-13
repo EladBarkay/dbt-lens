@@ -2,6 +2,11 @@
 
 All notable changes to DBT Lens are listed here. Versions follow [semantic versioning](https://semver.org).
 
+## 1.0.3 — Saved output fix
+
+- Saved output no longer reports every resource as changed. dbt strips a file's final newline when it
+  saves the source, so files ending with a newline were always flagged as outdated.
+
 ## 1.0.2 — Listing and naming polish
 
 - Every name shown in the IDE now reads **DBT Lens**: the settings and color scheme pages, the tool
