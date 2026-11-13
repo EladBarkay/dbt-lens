@@ -64,7 +64,19 @@ jobs:
           -PwithSqlTests=${{ matrix.sql }} -PwithTextmateTests=${{ matrix.textmate }}
           -PwithYamlTests=${{ matrix.yaml }} -PfreeEditionTests=${{ matrix.free }}
           -PskipSearchableOptions=${{ matrix.name != 'sql' }}
+          ${{ matrix.name == 'sql' && 'koverXmlReport koverHtmlReport' || '' }}
           --console=plain
+      - name: Coverage summary
+        if: matrix.name == 'sql'
+        run: |
+          python3 - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import xml.etree.ElementTree as ET
+          report = ET.parse("build/reports/kover/report.xml").getroot()
+          for counter in report.findall("counter"):
+              if counter.get("type") in ("LINE", "BRANCH"):
+                  missed, covered = int(counter.get("missed")), int(counter.get("covered"))
+                  print(f"**{counter.get('type').title()} coverage:** {100 * covered / (missed + covered):.1f}%  ")
+          PY
       - name: Package checksum
         if: matrix.name == 'sql'
         working-directory: build/distributions
@@ -75,6 +87,12 @@ jobs:
           name: plugin-package
           path: build/distributions/
           if-no-files-found: error
+          retention-days: 14
+      - uses: actions/upload-artifact@v7.0.2
+        if: matrix.name == 'sql'
+        with:
+          name: coverage-report
+          path: build/reports/kover/html/
           retention-days: 14
       - uses: actions/upload-artifact@v7.0.2
         if: always()

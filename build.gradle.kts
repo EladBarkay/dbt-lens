@@ -11,6 +11,7 @@ plugins {
     id("org.jetbrains.intellij.platform") version "2.20.1"
     id("com.ncorti.ktfmt.gradle") version "0.28.0"
     id("io.gitlab.arturbosch.detekt") version "1.23.8"
+    id("org.jetbrains.kotlinx.kover") version "0.9.11"
 }
 
 group = "dev.dbt.intellij"

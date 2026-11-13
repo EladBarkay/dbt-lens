@@ -29,6 +29,7 @@ plugin and formatter versions are pinned in the repository.
 | [detekt](https://detekt.dev) | `./gradlew check` | Static analysis. Existing findings are in `config/detekt-baseline.xml`; new code may not add any |
 | Kotlin compiler | every build | Warnings fail the build |
 | [pre-commit](https://pre-commit.com) | commit hook, CI `lint` job | Whitespace and file hygiene, YAML/JSON/XML syntax, private keys and secrets (gitleaks), workflow lint (actionlint) |
+| [Kover](https://github.com/Kotlin/kotlinx-kover) | CI `sql` job, `./gradlew koverHtmlReport` | Test coverage report (on the run summary and as an artifact); informational, not a gate |
 
 Install pre-commit with `pipx install pre-commit` (or `pip install pre-commit`), then run
 `pre-commit install` once in the repository. `pre-commit run --all-files` checks everything on demand.
