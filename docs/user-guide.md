@@ -161,7 +161,8 @@ optionally, `catalog.json` from the project's `target` directory (or a literal `
 - **Documentation**: descriptions, macro arguments, columns and types, the physical relation name and
   tests, rendered with the IDE's fonts and theme. Text is escaped; Markdown and Jinja aren't evaluated.
 - **Lineage**: upstream, downstream or both, depth 1–3, up to 80 resources. Click a node to open it.
-  This is resource lineage, not column lineage.
+  Tests and macros are hidden unless **Tests and macros** is checked. This is resource lineage, not
+  column lineage.
 
 Source changes since the artifact was generated, including unsaved edits, show a staleness warning.
 Configuration, dependency or warehouse changes aren't fully detected.

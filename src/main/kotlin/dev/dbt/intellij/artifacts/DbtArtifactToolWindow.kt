@@ -45,6 +45,7 @@ class DbtArtifactPanel(private val project: Project) : JPanel(BorderLayout()), D
     private val nodes = JComboBox<ArtifactNode>()
     private val direction = JComboBox(LineageDirection.entries.toTypedArray())
     private val depth = JSpinner(SpinnerNumberModel(1, 1, ArtifactLimits.MAX_LINEAGE_DEPTH, 1))
+    private val testsAndMacros = JCheckBox("Tests and macros")
     private val docs = ArtifactDocumentationPane()
     private val editor: Editor =
         EditorFactory.getInstance()
@@ -175,6 +176,7 @@ class DbtArtifactPanel(private val project: Project) : JPanel(BorderLayout()), D
                         add(direction)
                         add(JLabel("Depth"))
                         add(depth)
+                        add(testsAndMacros)
                         add(JLabel("Click a node to open its definition"))
                     },
                     BorderLayout.NORTH,
@@ -187,6 +189,7 @@ class DbtArtifactPanel(private val project: Project) : JPanel(BorderLayout()), D
         nodes.addActionListener { if (!filling) render() }
         direction.addActionListener { renderGraph() }
         depth.addChangeListener { renderGraph() }
+        testsAndMacros.addActionListener { renderGraph() }
         project.messageBus
             .connect(this)
             .subscribe(
@@ -220,7 +223,7 @@ class DbtArtifactPanel(private val project: Project) : JPanel(BorderLayout()), D
         filling = false
         setSql("")
         docs.text = ""
-        graph.show(snapshot, null, 1, LineageDirection.BOTH)
+        graph.show(snapshot, null, 1, LineageDirection.BOTH, false)
         if (active == null) {
             status.text = "Open a file inside a dbt project"
             return
@@ -493,6 +496,7 @@ class DbtArtifactPanel(private val project: Project) : JPanel(BorderLayout()), D
             (nodes.selectedItem as? ArtifactNode)?.id,
             depth.value as Int,
             direction.selectedItem as LineageDirection,
+            testsAndMacros.isSelected,
         )
 
     private fun setSql(code: String) {
@@ -568,12 +572,23 @@ private class LineageGraph(private val navigate: (String) -> Unit) : JPanel() {
         )
     }
 
-    fun show(data: ArtifactSnapshot, id: String?, depth: Int, direction: LineageDirection) {
+    fun show(
+        data: ArtifactSnapshot,
+        id: String?,
+        depth: Int,
+        direction: LineageDirection,
+        includeTestsAndMacros: Boolean,
+    ) {
         snapshot = data
         active = id
         slice =
-            id?.let { LineageSlice.build(data, it, depth, direction) }
-                ?: LineageSlice(emptyMap(), emptySet(), false)
+            id?.let {
+                LineageSlice.build(
+                    data,
+                    it,
+                    LineageQuery(depth, direction, includeTestsAndMacros),
+                )
+            } ?: LineageSlice(emptyMap(), emptySet(), false)
         boxes.clear()
         val layers = slice.layers.entries.groupBy { it.value }.toSortedMap()
         layers.values.forEachIndexed { col, nodes ->

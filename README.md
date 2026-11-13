@@ -7,7 +7,7 @@
 **Jinja-aware editing for dbt projects in IntelliJ IDEA and PyCharm.**
 
 [![Plugin checks](https://github.com/EladBarkay/dbt-lens/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/EladBarkay/dbt-lens/actions/workflows/build.yml)
-[![Version](https://img.shields.io/badge/version-1.0.3-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.0.4-blue)](CHANGELOG.md)
 [![License](https://img.shields.io/github/license/EladBarkay/dbt-lens)](LICENSE)
 [![IDE](https://img.shields.io/badge/IntelliJ%20IDEA%20%7C%20PyCharm-2025.3%2B-000?logo=jetbrains)](#compatibility)
 [![Stars](https://img.shields.io/github/stars/EladBarkay/dbt-lens?style=flat)](https://github.com/EladBarkay/dbt-lens/stargazers)
