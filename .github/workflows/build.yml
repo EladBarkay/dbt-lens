@@ -64,7 +64,19 @@ jobs:
           -PwithSqlTests=${{ matrix.sql }} -PwithTextmateTests=${{ matrix.textmate }}
           -PwithYamlTests=${{ matrix.yaml }} -PfreeEditionTests=${{ matrix.free }}
           -PskipSearchableOptions=${{ matrix.name != 'sql' }}
+          ${{ matrix.name == 'sql' && 'koverXmlReport koverHtmlReport' || '' }}
           --console=plain
+      - name: Coverage summary
+        if: matrix.name == 'sql'
+        run: |
+          python3 - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import xml.etree.ElementTree as ET
+          report = ET.parse("build/reports/kover/report.xml").getroot()
+          for counter in report.findall("counter"):
+              if counter.get("type") in ("LINE", "BRANCH"):
+                  missed, covered = int(counter.get("missed")), int(counter.get("covered"))
+                  print(f"**{counter.get('type').title()} coverage:** {100 * covered / (missed + covered):.1f}%  ")
+          PY
       - name: Package checksum
         if: matrix.name == 'sql'
         working-directory: build/distributions
@@ -75,6 +87,12 @@ jobs:
           name: plugin-package
           path: build/distributions/
           if-no-files-found: error
+          retention-days: 14
+      - uses: actions/upload-artifact@v7.0.2
+        if: matrix.name == 'sql'
+        with:
+          name: coverage-report
+          path: build/reports/kover/html/
           retention-days: 14
       - uses: actions/upload-artifact@v7.0.2
         if: always()
@@ -125,3 +143,25 @@ jobs:
         run: |
           pip install pre-commit==4.7.0
           pre-commit run --all-files --show-diff-on-failure
+  qodana:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      checks: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Free runner disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL
+          df -h /
+      - uses: JetBrains/qodana-action@v2026.2.2
+        with:
+          cache-default-branch-only: true
+        env:
+          QODANA_TOKEN: ${{ secrets.QODANA_TOKEN }}
