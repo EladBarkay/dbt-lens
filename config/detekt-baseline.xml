@@ -3,9 +3,9 @@
   <ManuallySuppressedIssues/>
   <CurrentIssues>
     <ID>ComplexCondition:DbtCommand.kt$DbtCommandPlanner$fqn.size >= 2 &amp;&amp; fqn.first() == node.packageName &amp;&amp; fqn.all { part -> part.isNotBlank() &amp;&amp; part.none { it.isWhitespace() || it.isISOControl() || it in ",.+*?:[]{}\\" } }</ID>
-    <ID>CyclomaticComplexMethod:ArtifactReader.kt$ArtifactReader$fun load(request: ArtifactRequest): ArtifactSnapshot</ID>
+    <ID>CyclomaticComplexMethod:ArtifactReader.kt$ArtifactReader$@Suppress("TooGenericExceptionCaught") fun load(request: ArtifactRequest): ArtifactSnapshot</ID>
     <ID>CyclomaticComplexMethod:ArtifactReader.kt$ArtifactReader$private fun resource(id: String, record: JsonObject): ArtifactNode?</ID>
-    <ID>CyclomaticComplexMethod:DbtCli.kt$DbtCli$private fun execute(run: Run, settings: DbtSettings.State, indicator: ProgressIndicator)</ID>
+    <ID>CyclomaticComplexMethod:DbtCli.kt$DbtCli$@Suppress("TooGenericExceptionCaught") private fun execute(run: Run, settings: DbtSettings.State, indicator: ProgressIndicator)</ID>
     <ID>CyclomaticComplexMethod:DbtCommand.kt$DbtCommandPlanner$fun plan( command: DbtCommand, settings: DbtSettings.State, inherited: Map&lt;String, String>, ): DbtCommandPlan</ID>
     <ID>CyclomaticComplexMethod:DbtFoldingBuilder.kt$DbtFoldingBuilder$override fun buildFoldRegions( root: PsiElement, document: Document, quick: Boolean, ): Array&lt;FoldingDescriptor></ID>
     <ID>CyclomaticComplexMethod:DbtLexer.kt$DbtLexer$private fun locate()</ID>
@@ -17,10 +17,9 @@
     <ID>CyclomaticComplexMethod:DbtTypeInference.kt$DbtTypeInference$fun of(element: PsiElement?, depth: Int = 0, visited: Set&lt;PsiElement> = emptySet()): DbtType</ID>
     <ID>CyclomaticComplexMethod:LocalVariables.kt$LocalVariables$fun visible(element: PsiElement): Map&lt;String, List&lt;DbtBinding>></ID>
     <ID>CyclomaticComplexMethod:ResourceCall.kt$ResourceCall.Companion$fun from(call: PsiElement): ResourceCall?</ID>
-    <ID>InstanceOfCheckForException:ArtifactReader.kt$ArtifactReader$e is com.intellij.openapi.progress.ProcessCanceledException</ID>
     <ID>LargeClass:DbtArtifactsTest.kt$DbtArtifactsTest : BasePlatformTestCase</ID>
-    <ID>LongMethod:ArtifactReader.kt$ArtifactReader$fun load(request: ArtifactRequest): ArtifactSnapshot</ID>
-    <ID>LongMethod:DbtCli.kt$DbtCli$private fun execute(run: Run, settings: DbtSettings.State, indicator: ProgressIndicator)</ID>
+    <ID>LongMethod:ArtifactReader.kt$ArtifactReader$@Suppress("TooGenericExceptionCaught") fun load(request: ArtifactRequest): ArtifactSnapshot</ID>
+    <ID>LongMethod:DbtCli.kt$DbtCli$@Suppress("TooGenericExceptionCaught") private fun execute(run: Run, settings: DbtSettings.State, indicator: ProgressIndicator)</ID>
     <ID>LongMethod:DbtCommand.kt$DbtCommandPlanner$fun plan( command: DbtCommand, settings: DbtSettings.State, inherited: Map&lt;String, String>, ): DbtCommandPlan</ID>
     <ID>LongMethod:DbtCompletionContributor.kt$DbtCompletionContributor.&lt;no name provided>$override fun addCompletions( parameters: CompletionParameters, context: ProcessingContext, result: CompletionResultSet, )</ID>
     <ID>LongMethod:DbtLexer.kt$DbtLexer$private fun locate()</ID>
@@ -28,18 +27,10 @@
     <ID>LongMethod:DbtResources.kt$DbtResources$private fun catalog(root: VirtualFile): List&lt;DbtResource></ID>
     <ID>LongMethod:DbtSymbols.kt$DbtSymbols$fun members(type: DbtType): List&lt;DbtSymbol></ID>
     <ID>LongMethod:DbtTypeInference.kt$DbtTypeInference$fun of(element: PsiElement?, depth: Int = 0, visited: Set&lt;PsiElement> = emptySet()): DbtType</ID>
-    <ID>LoopWithTooManyJumpStatements:ArtifactDocumentation.kt$ArtifactDocumentation$for</ID>
-    <ID>LoopWithTooManyJumpStatements:DbtParser.kt$DbtParser.Parser$while</ID>
-    <ID>LoopWithTooManyJumpStatements:DbtResources.kt$DbtResources$for</ID>
-    <ID>LoopWithTooManyJumpStatements:LocalVariables.kt$LocalVariables$while</ID>
-    <ID>TooGenericExceptionCaught:ArtifactReader.kt$ArtifactReader$e: Exception</ID>
-    <ID>TooGenericExceptionCaught:DbtArtifactToolWindow.kt$DbtArtifactPanel$error: Exception</ID>
-    <ID>TooGenericExceptionCaught:DbtCli.kt$DbtCli$e: Exception</ID>
     <ID>TooManyFunctions:ArtifactReader.kt$ArtifactReader</ID>
     <ID>TooManyFunctions:DbtArtifactToolWindow.kt$DbtArtifactPanel : JPanelDisposable</ID>
     <ID>TooManyFunctions:DbtLexer.kt$DbtLexer : LexerBase</ID>
     <ID>TooManyFunctions:DbtParser.kt$DbtParser$Parser</ID>
     <ID>TooManyFunctions:ProjectMacros.kt$ProjectMacros</ID>
-    <ID>UseRequire:DbtArtifactToolWindow.kt$DbtArtifactPanel$throw IllegalArgumentException( "Generate manifest before compiling an installed dependency resource", )</ID>
   </CurrentIssues>
 </SmellBaseline>

@@ -1,3 +1,5 @@
+import io.gitlab.arturbosch.detekt.Detekt
+import io.gitlab.arturbosch.detekt.DetektCreateBaselineTask
 import org.jetbrains.intellij.platform.gradle.TestFrameworkType
 import org.jetbrains.kotlin.gradle.dsl.JvmDefaultMode
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
@@ -22,6 +24,15 @@ detekt {
     config.setFrom("config/detekt.yml")
     baseline = file("config/detekt-baseline.xml")
 }
+
+tasks.withType<Detekt>().configureEach {
+    jvmTarget = "21"
+    onlyIf("detekt 1.23 runs on Java 22 or older; the Java 21 CI jobs enforce it") {
+        JavaVersion.current() <= JavaVersion.VERSION_22
+    }
+}
+
+tasks.withType<DetektCreateBaselineTask>().configureEach { jvmTarget = "21" }
 
 tasks.processResources { from(files("LICENSE", "NOTICE")) { into("META-INF") } }
 

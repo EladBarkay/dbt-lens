@@ -5,6 +5,9 @@ import dev.dbt.intellij.lang.DbtTypes as T
 import dev.dbt.intellij.psi.DbtVariable
 import dev.dbt.intellij.psi.LocalMacros
 
+/** An opening quote, at least one character and a closing quote. */
+private const val MIN_QUOTED_NAME_LENGTH = 3
+
 /** Literal calls only, including keyword arguments. No adapter or project code is executed. */
 data class DispatchCall(val name: String, val namespace: String?) {
     companion object {
@@ -52,7 +55,7 @@ data class DispatchCall(val name: String, val namespace: String?) {
             )
                 return null
             val text = value.text
-            if (text.length < 3 || text.last() != text.first()) return null
+            if (text.length < MIN_QUOTED_NAME_LENGTH || text.last() != text.first()) return null
             return text.drop(1).dropLast(1).takeIf { it.matches(Regex("[A-Za-z_][A-Za-z_0-9]*")) }
         }
     }

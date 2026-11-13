@@ -14,6 +14,7 @@ import com.intellij.psi.util.CachedValue
 import com.intellij.psi.util.CachedValueProvider
 import com.intellij.psi.util.CachedValuesManager
 import com.intellij.psi.util.PsiModificationTracker
+import dev.dbt.intellij.io.SourceLimits
 import dev.dbt.intellij.project.DbtProjectConfiguration
 import dev.dbt.intellij.psi.ProjectMacros
 
@@ -109,7 +110,7 @@ class DbtResources(private val project: Project) {
     }
 
     private fun catalog(root: VirtualFile): List<DbtResource> {
-        if (catalogs.size >= 128) catalogs.clear()
+        if (catalogs.size >= SourceLimits.MAX_CACHED_CATALOGS) catalogs.clear()
         return catalogs
             .computeIfAbsent(root) {
                 CachedValuesManager.getManager(project)
@@ -152,7 +153,7 @@ class DbtResources(private val project: Project) {
                                                         )
                                                 key == "snapshot-paths" &&
                                                     ext == "sql" &&
-                                                    file.length <= 2_000_000 -> {
+                                                    file.length <= SourceLimits.MAX_FILE_BYTES -> {
                                                     val text =
                                                         com.intellij.openapi.fileEditor
                                                             .FileDocumentManager
@@ -175,7 +176,7 @@ class DbtResources(private val project: Project) {
                                                         }
                                                 }
                                                 ext in setOf("yml", "yaml") &&
-                                                    file.length <= 2_000_000 &&
+                                                    file.length <= SourceLimits.MAX_FILE_BYTES &&
                                                     metadataFiles.add(file) -> {
                                                     if (
                                                         DbtResourceMetadata.EP.extensionList

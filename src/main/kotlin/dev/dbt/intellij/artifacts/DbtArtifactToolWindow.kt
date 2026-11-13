@@ -21,6 +21,7 @@ import com.intellij.psi.PsiManager
 import com.intellij.ui.JBColor
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.content.ContentFactory
+import dev.dbt.intellij.artifacts.ArtifactLayout.Graph
 import dev.dbt.intellij.cli.*
 import java.awt.*
 import java.awt.event.MouseAdapter
@@ -43,7 +44,7 @@ class DbtArtifactPanel(private val project: Project) : JPanel(BorderLayout()), D
     private val status = JLabel("Open a file inside a dbt project")
     private val nodes = JComboBox<ArtifactNode>()
     private val direction = JComboBox(LineageDirection.entries.toTypedArray())
-    private val depth = JSpinner(SpinnerNumberModel(1, 1, 3, 1))
+    private val depth = JSpinner(SpinnerNumberModel(1, 1, ArtifactLimits.MAX_LINEAGE_DEPTH, 1))
     private val docs = ArtifactDocumentationPane()
     private val editor: Editor =
         EditorFactory.getInstance()
@@ -136,7 +137,7 @@ class DbtArtifactPanel(private val project: Project) : JPanel(BorderLayout()), D
                 )
             }
         val commands =
-            JPanel(GridLayout(0, 2, 4, 4)).apply {
+            JPanel(GridLayout(0, 2, ArtifactLayout.BUTTON_GAP, ArtifactLayout.BUTTON_GAP)).apply {
                 add(generate)
                 add(compile)
                 add(compileProject)
@@ -378,7 +379,7 @@ class DbtArtifactPanel(private val project: Project) : JPanel(BorderLayout()), D
         cli.start(command).also { started ->
             if (started) {
                 updateCommands()
-                tabs.selectedIndex = 3
+                tabs.selectedIndex = ArtifactLayout.COMMAND_OUTPUT_TAB
             }
         }
 
@@ -442,12 +443,12 @@ class DbtArtifactPanel(private val project: Project) : JPanel(BorderLayout()), D
                                 ?: return
                         val selector =
                             selected?.let(DbtCommandPlanner::selector)
-                                ?: if (ownRoot.path == root.toString())
+                                ?: run {
+                                    require(ownRoot.path == root.toString()) {
+                                        "Generate manifest before compiling an installed dependency resource"
+                                    }
                                     DbtCommandPlanner.selector(namespace, relative)
-                                else
-                                    throw IllegalArgumentException(
-                                        "Generate manifest before compiling an installed dependency resource",
-                                    )
+                                }
                         DbtCommand(kind, context, selector = selector, sourcePath = active.path)
                     }
                 }
@@ -459,6 +460,8 @@ class DbtArtifactPanel(private val project: Project) : JPanel(BorderLayout()), D
         }
     }
 
+    // Pooled-thread boundary: unexpected errors are logged and shown instead of lost.
+    @Suppress("TooGenericExceptionCaught")
     private fun background(indicator: ProgressIndicatorBase, action: () -> Unit) {
         val app = ApplicationManager.getApplication()
         app.executeOnPooledThread {
@@ -575,13 +578,21 @@ private class LineageGraph(private val navigate: (String) -> Unit) : JPanel() {
         val layers = slice.layers.entries.groupBy { it.value }.toSortedMap()
         layers.values.forEachIndexed { col, nodes ->
             nodes.forEachIndexed { row, node ->
-                boxes[node.key] = Rectangle(24 + col * 280, 40 + row * 76, 240, 56)
+                boxes[node.key] =
+                    Rectangle(
+                        Graph.MARGIN + col * Graph.COLUMN_WIDTH,
+                        Graph.TOP + row * Graph.ROW_HEIGHT,
+                        Graph.BOX_WIDTH,
+                        Graph.BOX_HEIGHT,
+                    )
             }
         }
         preferredSize =
             Dimension(
-                (layers.size * 280 + 24).coerceAtLeast(300),
-                ((layers.values.maxOfOrNull { it.size } ?: 0) * 76 + 60).coerceAtLeast(160),
+                (layers.size * Graph.COLUMN_WIDTH + Graph.MARGIN).coerceAtLeast(Graph.MIN_WIDTH),
+                ((layers.values.maxOfOrNull { it.size } ?: 0) * Graph.ROW_HEIGHT +
+                        Graph.VERTICAL_PADDING)
+                    .coerceAtLeast(Graph.MIN_HEIGHT),
             )
         revalidate()
         repaint()
@@ -604,29 +615,38 @@ private class LineageGraph(private val navigate: (String) -> Unit) : JPanel() {
                 val x = to.x
                 val y = to.y + to.height / 2
                 g.drawLine(from.x + from.width, from.y + from.height / 2, x, y)
-                g.drawLine(x, y, x - 6, y - 4)
-                g.drawLine(x, y, x - 6, y + 4)
+                g.drawLine(x, y, x - Graph.ARROW_LENGTH, y - Graph.ARROW_SPREAD)
+                g.drawLine(x, y, x - Graph.ARROW_LENGTH, y + Graph.ARROW_SPREAD)
             }
             g.color = foreground
             g.drawString(
-                if (slice.truncated) "Showing up to 80 resources; reduce depth to focus the graph"
+                if (slice.truncated)
+                    "Showing up to ${ArtifactLimits.LINEAGE_RESOURCE_LIMIT} resources; reduce depth to focus the graph"
                 else "Saved artifact relationships · ${boxes.size} resources",
-                24,
-                22,
+                Graph.MARGIN,
+                Graph.CAPTION_BASELINE,
             )
             boxes.forEach { (id, box) ->
                 g.color =
                     if (id == active) com.intellij.util.ui.UIUtil.getListSelectionBackground(true)
                     else background
-                g.fillRoundRect(box.x, box.y, box.width, box.height, 8, 8)
+                g.fillRoundRect(box.x, box.y, box.width, box.height, Graph.BOX_ARC, Graph.BOX_ARC)
                 g.color = JBColor.GRAY
-                g.drawRoundRect(box.x, box.y, box.width, box.height, 8, 8)
+                g.drawRoundRect(box.x, box.y, box.width, box.height, Graph.BOX_ARC, Graph.BOX_ARC)
                 g.color =
                     if (id == active) com.intellij.util.ui.UIUtil.getListSelectionForeground(true)
                     else foreground
                 val node = snapshot.nodes[id] ?: return@forEach
-                g.drawString(node.name.take(30), box.x + 10, box.y + 22)
-                g.drawString("${node.packageName} · ${node.kind}".take(36), box.x + 10, box.y + 42)
+                g.drawString(
+                    node.name.take(Graph.NAME_CHARS),
+                    box.x + Graph.TEXT_INSET,
+                    box.y + Graph.NAME_BASELINE,
+                )
+                g.drawString(
+                    "${node.packageName} · ${node.kind}".take(Graph.DETAIL_CHARS),
+                    box.x + Graph.TEXT_INSET,
+                    box.y + Graph.DETAIL_BASELINE,
+                )
             }
         } finally {
             g.dispose()

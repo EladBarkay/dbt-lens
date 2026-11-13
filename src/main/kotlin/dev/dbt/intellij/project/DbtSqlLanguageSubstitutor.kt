@@ -12,6 +12,7 @@ import com.intellij.psi.LanguageSubstitutor
 import com.intellij.psi.util.CachedValue
 import com.intellij.psi.util.CachedValueProvider
 import com.intellij.psi.util.CachedValuesManager
+import dev.dbt.intellij.io.SourceLimits
 import dev.dbt.intellij.lang.DbtLanguage
 import java.util.concurrent.ConcurrentHashMap
 
@@ -52,7 +53,7 @@ class DbtProjectRoots(private val project: Project) : Disposable {
 
     fun rootFor(file: VirtualFile): VirtualFile? {
         val directory = file.parent ?: return null
-        if (directories.size >= 512) directories.clear()
+        if (directories.size >= SourceLimits.MAX_CACHED_DIRECTORIES) directories.clear()
         return directories
             .computeIfAbsent(directory) { dir ->
                 CachedValuesManager.getManager(project)

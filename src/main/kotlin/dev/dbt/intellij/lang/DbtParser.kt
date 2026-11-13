@@ -4,6 +4,7 @@ import com.intellij.lang.ASTNode
 import com.intellij.lang.PsiBuilder
 import com.intellij.lang.PsiParser
 import com.intellij.psi.tree.IElementType
+import dev.dbt.intellij.io.SourceLimits
 
 /** Structural template parser plus a Pratt expression parser. Never discards source text. */
 class DbtParser : PsiParser {
@@ -40,7 +41,7 @@ class DbtParser : PsiParser {
             else null
 
         fun body(expected: String?, ancestors: Set<String>, depth: Int) {
-            if (depth > 128) {
+            if (depth > SourceLimits.MAX_TEMPLATE_NESTING) {
                 b.error("Template nesting is too deep")
                 while (!b.eof()) b.advanceLexer()
                 return
@@ -153,7 +154,7 @@ class DbtParser : PsiParser {
                     } else if (b.tokenText == "|") {
                         while (b.tokenText == "|") {
                             b.advanceLexer()
-                            expression(81, 0)
+                            expression(BindingPower.FILTER_OPERAND, 0)
                         }
                     }
                 }
@@ -162,7 +163,7 @@ class DbtParser : PsiParser {
                     while (eat(DbtTypes.COMMA)) name(DbtTypes.BINDING_NAME)
                     if (b.tokenText == "in") {
                         b.advanceLexer()
-                        expression(6, 0)
+                        expression(BindingPower.CONDITIONAL + 1, 0)
                     } else b.error("Expected 'in'")
                     if (b.tokenText == "if") {
                         b.advanceLexer()
@@ -253,7 +254,7 @@ class DbtParser : PsiParser {
         }
 
         private fun expression(minimum: Int, depth: Int): PsiBuilder.Marker? {
-            if (depth > 128) {
+            if (depth > SourceLimits.MAX_TEMPLATE_NESTING) {
                 b.error("Expression nesting is too deep")
                 return null
             }
@@ -293,7 +294,7 @@ class DbtParser : PsiParser {
                         left.done(DbtTypes.VALUE)
                     } else if (b.tokenText == "not") {
                         b.advanceLexer()
-                        expression(25, depth + 1)
+                        expression(BindingPower.NOT_OPERAND, depth + 1)
                         left.done(DbtTypes.UNARY)
                     } else if (isName()) {
                         b.advanceLexer()
@@ -306,7 +307,7 @@ class DbtParser : PsiParser {
                 DbtTypes.OPERATOR ->
                     if (b.tokenText in setOf("+", "-")) {
                         b.advanceLexer()
-                        expression(65, depth + 1)
+                        expression(BindingPower.SIGN_OPERAND, depth + 1)
                         left.done(DbtTypes.UNARY)
                     } else {
                         b.error("Unexpected operator")
@@ -342,7 +343,7 @@ class DbtParser : PsiParser {
             while (!b.eof() && !boundary()) {
                 if (
                     b.tokenType in setOf(DbtTypes.LPAREN, DbtTypes.DOT, DbtTypes.LBRACKET) &&
-                        minimum <= 90
+                        minimum <= BindingPower.POSTFIX
                 ) {
                     val outer = left.precede()
                     when (b.tokenType) {
@@ -392,13 +393,13 @@ class DbtParser : PsiParser {
                 // Jinja inline conditional: value if condition else alternative. The condition
                 // is an or-expression; the alternative associates to the right. A for-header's
                 // iterable starts above this precedence so its trailing if remains a loop filter.
-                if (b.tokenText == "if" && minimum <= 5) {
+                if (b.tokenText == "if" && minimum <= BindingPower.CONDITIONAL) {
                     val outer = left.precede()
                     b.advanceLexer()
-                    expression(6, depth + 1)
+                    expression(BindingPower.CONDITIONAL + 1, depth + 1)
                     if (b.tokenText == "else") {
                         b.advanceLexer()
-                        expression(5, depth + 1)
+                        expression(BindingPower.CONDITIONAL, depth + 1)
                     }
                     outer.done(DbtTypes.CONDITIONAL)
                     left = outer
@@ -467,4 +468,17 @@ class DbtParser : PsiParser {
                 "|" to 80,
             )
     }
+}
+
+/**
+ * Binding powers next to the binary operator table (PRECEDENCE): an inline conditional binds
+ * loosest, `not` takes a comparison, a sign binds above `*`, a filter's operand stops at the next
+ * `|`, and calls, attributes and indexing bind tightest.
+ */
+private object BindingPower {
+    const val CONDITIONAL = 5
+    const val NOT_OPERAND = 25
+    const val SIGN_OPERAND = 65
+    const val FILTER_OPERAND = 81
+    const val POSTFIX = 90
 }

@@ -12,7 +12,8 @@ import javax.swing.*
 internal class DbtMacroCallDialog(project: Project, calls: Map<String, String>) :
     DialogWrapper(project) {
     private val choices = JComboBox(calls.keys.toTypedArray())
-    private val call = JTextArea(calls.values.first(), 6, 50)
+    private val call =
+        JTextArea(calls.values.first(), DialogLayout.CALL_ROWS, DialogLayout.CALL_COLUMNS)
     val invocation
         get() = call.text.trim()
 
@@ -27,8 +28,9 @@ internal class DbtMacroCallDialog(project: Project, calls: Map<String, String>) 
     }
 
     override fun createCenterPanel(): JComponent =
-        JPanel(BorderLayout(0, JBUI.scale(8))).apply {
-            preferredSize = Dimension(JBUI.scale(560), JBUI.scale(230))
+        JPanel(BorderLayout(0, JBUI.scale(DialogLayout.GAP))).apply {
+            preferredSize =
+                Dimension(JBUI.scale(DialogLayout.WIDTH), JBUI.scale(DialogLayout.HEIGHT))
             add(choices, BorderLayout.NORTH)
             add(JBScrollPane(call), BorderLayout.CENTER)
             add(
@@ -40,9 +42,17 @@ internal class DbtMacroCallDialog(project: Project, calls: Map<String, String>) 
         }
 
     override fun doValidate() =
-        if (invocation.isBlank() || invocation.length > 65_536)
+        if (invocation.isBlank() || invocation.length > CommandLimits.MAX_INVOCATION_CHARS)
             ValidationInfo("Enter a macro call smaller than 64 KB", call)
         else null
 
     override fun getPreferredFocusedComponent(): JComponent = call
+}
+
+private object DialogLayout {
+    const val CALL_ROWS = 6
+    const val CALL_COLUMNS = 50
+    const val GAP = 8
+    const val WIDTH = 560
+    const val HEIGHT = 230
 }

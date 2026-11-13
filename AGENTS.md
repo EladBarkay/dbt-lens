@@ -43,6 +43,12 @@ properties are listed in CONTRIBUTING.md under "Test matrix".
 - detekt must not report new findings. Never add entries to `config/detekt-baseline.xml`;
   only regenerate it (`./gradlew detektBaseline`) after removing findings.
 - Formatting is ktfmt's Kotlin-lang style; don't hand-format against it.
+- Numbers live in named constants. Put limits and layout values in the area's object
+  (`SourceLimits`, `ArtifactLimits`, `ArtifactLayout`, `CommandLimits`); grammar facts stay next
+  to their code. detekt's `MagicNumber` reports literals anywhere else.
+- Use `@Suppress` only for a deliberate exception, with a one-line reason above it (today: the three
+  error-boundary `catch (e: Exception)` blocks). If a rule needs suppressing everywhere, change
+  `config/detekt.yml` instead.
 
 ## Don't change without the maintainer
 
