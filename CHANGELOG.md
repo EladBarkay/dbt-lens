@@ -4,15 +4,16 @@ All notable changes to DBT Lens are listed here. Versions follow [semantic versi
 
 ## 1.0.4 — Cleaner lineage and documentation
 
+- Saved output no longer reports every resource as changed. dbt strips a file's final newline when it
+  saves the source, so files ending with a newline were always flagged as outdated.
 - The lineage graph hides tests and macros by default, so models, sources and seeds stand out.
   Turn on **Tests and macros** next to the depth setting to show them again.
 - Column names in resource documentation no longer wrap mid-word, and the Description column is
   left out when no column has a description.
 
-## 1.0.3 — Saved output fix
+## 1.0.3 — Saved output fix (not published)
 
-- Saved output no longer reports every resource as changed. dbt strips a file's final newline when it
-  saves the source, so files ending with a newline were always flagged as outdated.
+- Tagged but not released; its fix ships in 1.0.4.
 
 ## 1.0.2 — Listing and naming polish
 
