@@ -32,6 +32,8 @@ usages in action.
 
 ## Editing Jinja
 
+![Jinja tags highlighted separately from SQL in a dbt model](images/jinja-editing.png)
+
 - **Highlighting**: Jinja and SQL are colored independently. SQL coloring is lexical (keywords, strings,
   comments, numbers), not dialect-aware. Colors are under
   **Settings → Editor → Color Scheme → DBT Lens**.
@@ -54,6 +56,8 @@ headers are only balanced-token structures, and SQL strings or comments crossing
 aren't context-aware yet.
 
 ## Completion
+
+![Completion offering a project macro with its parameters](images/completion.png)
 
 - Variables in scope: macro parameters, earlier `set` bindings, loop/with/call bindings, and contextual
   names such as `loop`, `caller`, `kwargs` and `varargs`.
@@ -111,6 +115,8 @@ and snapshot reads are capped at 2 MB.
 On `adapter.dispatch('format_value', 'utils')`, use Go to Declaration on `dispatch` or the macro name to
 choose among `default__format_value`, `snowflake__format_value` and other implementations.
 
+![Choosing among the adapter implementations of dbt_utils.deduplicate](images/adapter-dispatch.png)
+
 - Defaults are listed first within each package.
 - Package order follows a literal root `dispatch.search_order` when YAML support is installed.
 - From an adapter-specific implementation, Go to Declaration opens the package's `default__` version.
@@ -163,6 +169,10 @@ optionally, `catalog.json` from the project's `target` directory (or a literal `
 - **Lineage**: upstream, downstream or both, depth 1–3, up to 80 resources. Click a node to open it.
   Tests and macros are hidden unless **Tests and macros** is checked. This is resource lineage, not
   column lineage.
+
+![Model documentation from the manifest in a Quick Documentation popup](images/model-documentation.png)
+
+![Saved compiled SQL with the macro and for loop expanded](images/compiled-sql.png)
 
 Source changes since the artifact was generated, including unsaved edits, show a staleness warning.
 Configuration, dependency or warehouse changes aren't fully detected.
