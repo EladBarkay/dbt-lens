@@ -12,13 +12,27 @@ You need **JDK 21**. No dbt installation is needed; the CLI tests use `/usr/bin/
 Unix and never touch a warehouse. The first build downloads the IntelliJ SDK and its JetBrains Runtime.
 
 ```sh
-./gradlew check buildPlugin     # format check, tests and the plugin ZIP
+./gradlew check buildPlugin     # formatting, static analysis, tests and the plugin ZIP
 ./gradlew runIde                # start a sandbox IDE with the plugin installed
 ./gradlew ktfmtFormat           # apply the project's Kotlin style
+pre-commit install              # run the commit hooks automatically (one-time)
 ```
 
 The ZIP is written to `build/distributions/`. The Gradle wrapper, Kotlin compiler, IntelliJ Platform
 plugin and formatter versions are pinned in the repository.
+
+## Quality checks
+
+| Check | Runs in | What it enforces |
+| --- | --- | --- |
+| [ktfmt](https://github.com/facebook/ktfmt) | `./gradlew check`, commit hook | Kotlin formatting (Kotlin-lang style) |
+| [detekt](https://detekt.dev) | `./gradlew check` | Static analysis. Existing findings are in `config/detekt-baseline.xml`; new code may not add any |
+| Kotlin compiler | every build | Warnings fail the build |
+| [pre-commit](https://pre-commit.com) | commit hook, CI `lint` job | Whitespace and file hygiene, YAML/JSON/XML syntax, private keys and secrets (gitleaks), workflow lint (actionlint) |
+
+Install pre-commit with `pipx install pre-commit` (or `pip install pre-commit`), then run
+`pre-commit install` once in the repository. `pre-commit run --all-files` checks everything on demand.
+Agents working in this repository should also follow [AGENTS.md](AGENTS.md).
 
 ## Test matrix
 
@@ -66,7 +80,7 @@ Results against an SDK outside the CI matrix are experiments, not compatibility 
 ## Pull requests
 
 1. Branch from `main` and keep the change focused.
-2. Run `./gradlew ktfmtFormat check` before pushing.
+2. Run `./gradlew ktfmtFormat check` (and `pre-commit run --all-files` if hooks aren't installed) before pushing.
 3. Add an entry to `CHANGELOG.md` for user-visible changes.
 4. All CI checks must pass before merging; `main` is protected and enforces this.
 

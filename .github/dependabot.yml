@@ -9,6 +9,13 @@ updates:
     groups:
       actions:
         patterns: ['*']
+  - package-ecosystem: pre-commit
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      hooks:
+        patterns: ['*']
   - package-ecosystem: gradle
     directory: /
     schedule:
