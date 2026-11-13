@@ -20,7 +20,7 @@ internal class DbtCommandOutput {
             if (c == '\n') {
                 line(partial.toString())
                 partial.setLength(0)
-            } else if (partial.length < 2_100_000) partial.append(c)
+            } else if (partial.length < CommandLimits.MAX_PARTIAL_LINE_CHARS) partial.append(c)
         }
     }
 
@@ -47,7 +47,7 @@ internal class DbtCommandOutput {
                 ?.takeIf {
                     it.isJsonPrimitive &&
                         it.asJsonPrimitive.isString &&
-                        it.asString.length <= 2_000_000
+                        it.asString.length <= CommandLimits.MAX_RESULT_CHARS
                 }
                 ?.let { compiled = it.asString }
         if (name in setOf("NoNodesForSelectionCriteria", "NothingToDo")) selectionMissing = true
@@ -55,6 +55,7 @@ internal class DbtCommandOutput {
             info?.get("msg")?.takeIf { it.isJsonPrimitive && it.asJsonPrimitive.isString }?.asString
                 ?: raw
         log.append(message.trimEnd('\r')).append('\n')
-        if (log.length > 200_000) log.delete(0, log.length - 200_000)
+        if (log.length > CommandLimits.MAX_LOG_CHARS)
+            log.delete(0, log.length - CommandLimits.MAX_LOG_CHARS)
     }
 }

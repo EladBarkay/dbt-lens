@@ -1,3 +1,5 @@
+import io.gitlab.arturbosch.detekt.Detekt
+import io.gitlab.arturbosch.detekt.DetektCreateBaselineTask
 import org.jetbrains.intellij.platform.gradle.TestFrameworkType
 import org.jetbrains.kotlin.gradle.dsl.JvmDefaultMode
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
@@ -8,6 +10,7 @@ plugins {
     kotlin("jvm") version "2.4.21"
     id("org.jetbrains.intellij.platform") version "2.20.1"
     id("com.ncorti.ktfmt.gradle") version "0.28.0"
+    id("io.gitlab.arturbosch.detekt") version "1.23.8"
 }
 
 group = "dev.dbt.intellij"
@@ -15,6 +18,21 @@ group = "dev.dbt.intellij"
 version = "1.0.2"
 
 ktfmt { kotlinLangStyle() }
+
+detekt {
+    buildUponDefaultConfig = true
+    config.setFrom("config/detekt.yml")
+    baseline = file("config/detekt-baseline.xml")
+}
+
+tasks.withType<Detekt>().configureEach {
+    jvmTarget = "21"
+    onlyIf("detekt 1.23 runs on Java 22 or older; the Java 21 CI jobs enforce it") {
+        JavaVersion.current() <= JavaVersion.VERSION_22
+    }
+}
+
+tasks.withType<DetektCreateBaselineTask>().configureEach { jvmTarget = "21" }
 
 tasks.processResources { from(files("LICENSE", "NOTICE")) { into("META-INF") } }
 
@@ -58,6 +76,7 @@ tasks.withType<KotlinCompile>().configureEach {
         languageVersion = KotlinVersion.KOTLIN_2_2
         apiVersion = KotlinVersion.KOTLIN_2_2
         jvmDefault = JvmDefaultMode.NO_COMPATIBILITY
+        allWarningsAsErrors = true
     }
 }
 

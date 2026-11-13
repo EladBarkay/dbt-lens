@@ -97,6 +97,8 @@ class DbtCli(private val project: Project) : Disposable {
         update(run) { it.copy(message = "Stopping dbt…") }
     }
 
+    // Command boundary: any failure becomes the command's status message.
+    @Suppress("TooGenericExceptionCaught")
     private fun execute(run: Run, settings: DbtSettings.State, indicator: ProgressIndicator) {
         var phase = DbtCliPhase.FAILED
         var message = "dbt command failed"
@@ -153,7 +155,7 @@ class DbtCli(private val project: Project) : Disposable {
             if (run.cancelled.get() || indicator.isCanceled) handler.destroyProcess()
             handler.process.outputStream
                 .close() // Interactive prompts belong in the user's terminal.
-            while (!handler.waitFor(100)) {
+            while (!handler.waitFor(CommandLimits.PROCESS_POLL_MILLIS)) {
                 if (run.cancelled.get() || indicator.isCanceled) {
                     run.cancelled.set(true)
                     handler.destroyProcess()
@@ -204,7 +206,7 @@ class DbtCli(private val project: Project) : Disposable {
                         ?.takeIf { !it.isProcessTerminated }
                         ?.let {
                             it.destroyProcess()
-                            if (!it.waitFor(2_000)) {
+                            if (!it.waitFor(CommandLimits.TERMINATE_TIMEOUT_MILLIS)) {
                                 it.killProcess()
                                 it.waitFor()
                             }

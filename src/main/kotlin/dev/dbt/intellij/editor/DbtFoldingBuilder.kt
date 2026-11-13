@@ -11,6 +11,11 @@ import com.intellij.psi.TokenType
 import dev.dbt.intellij.lang.DbtBlocks
 import dev.dbt.intellij.lang.DbtTypes as T
 
+private const val COMMENT_OPEN = "{#"
+private const val TRIMMED_COMMENT_OPEN = "{#-"
+private const val COMMENT_CLOSE = "#}"
+private const val TRIMMED_COMMENT_CLOSE = "-#}"
+
 /** Structural, index-independent folds remain available while the IDE updates indexes. */
 class DbtFoldingBuilder : FoldingBuilderEx(), DumbAware {
     override fun buildFoldRegions(
@@ -95,8 +100,12 @@ class DbtFoldingBuilder : FoldingBuilderEx(), DumbAware {
                 T.COMMENT -> {
                     val text = node.text
                     if (text.endsWith("#}")) {
-                        val prefix = if (text.startsWith("{#-")) 3 else 2
-                        val suffix = if (text.endsWith("-#}")) 3 else 2
+                        val prefix =
+                            if (text.startsWith(TRIMMED_COMMENT_OPEN)) TRIMMED_COMMENT_OPEN.length
+                            else COMMENT_OPEN.length
+                        val suffix =
+                            if (text.endsWith(TRIMMED_COMMENT_CLOSE)) TRIMMED_COMMENT_CLOSE.length
+                            else COMMENT_CLOSE.length
                         add(node, node.startOffset + prefix, node.textRange.endOffset - suffix)
                     }
                 }

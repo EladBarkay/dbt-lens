@@ -42,34 +42,37 @@ object DbtCommandPlanner {
     }
 
     fun environment(file: Path): Map<String, String> {
-        require(Files.isRegularFile(file) && Files.size(file) <= 65_536) {
+        require(
+            Files.isRegularFile(file) &&
+                Files.size(file) <= CommandLimits.MAX_ENVIRONMENT_FILE_BYTES,
+        ) {
             "Environment file must be a readable file smaller than 64 KB"
         }
         val result = linkedMapOf<String, String>()
-        dev.dbt.intellij.io.BoundedFiles.text(file, 65_536).lineSequence().forEachIndexed {
-            index,
-            raw ->
-            val line = raw.trim().removePrefix("export ").trim()
-            if (line.isBlank() || line.startsWith('#')) return@forEachIndexed
-            val match =
-                Regex("([A-Za-z_][A-Za-z_0-9]*)\\s*=\\s*(.*)").matchEntire(line)
-                    ?: throw IllegalArgumentException(
-                        "Invalid environment entry on line ${index + 1}; use literal NAME=value",
-                    )
-            var value = match.groupValues[2]
-            if (value.startsWith('"') || value.startsWith('\'')) {
-                val quote = value.first()
-                val quoted =
-                    Regex(
-                            "^${Regex.escape(quote.toString())}(.*)${Regex.escape(quote.toString())}(?:\\s+#.*)?$",
+        dev.dbt.intellij.io.BoundedFiles.text(file, CommandLimits.MAX_ENVIRONMENT_FILE_BYTES)
+            .lineSequence()
+            .forEachIndexed { index, raw ->
+                val line = raw.trim().removePrefix("export ").trim()
+                if (line.isBlank() || line.startsWith('#')) return@forEachIndexed
+                val match =
+                    Regex("([A-Za-z_][A-Za-z_0-9]*)\\s*=\\s*(.*)").matchEntire(line)
+                        ?: throw IllegalArgumentException(
+                            "Invalid environment entry on line ${index + 1}; use literal NAME=value",
                         )
-                        .matchEntire(value)
-                require(quoted != null) { "Unclosed environment value on line ${index + 1}" }
-                value = quoted.groupValues[1]
-            } else value = value.replace(Regex("\\s+#.*$"), "").trimEnd()
-            require('\u0000' !in value) { "Invalid environment value on line ${index + 1}" }
-            result[match.groupValues[1]] = value
-        }
+                var value = match.groupValues[2]
+                if (value.startsWith('"') || value.startsWith('\'')) {
+                    val quote = value.first()
+                    val quoted =
+                        Regex(
+                                "^${Regex.escape(quote.toString())}(.*)${Regex.escape(quote.toString())}(?:\\s+#.*)?$",
+                            )
+                            .matchEntire(value)
+                    require(quoted != null) { "Unclosed environment value on line ${index + 1}" }
+                    value = quoted.groupValues[1]
+                } else value = value.replace(Regex("\\s+#.*$"), "").trimEnd()
+                require('\u0000' !in value) { "Invalid environment value on line ${index + 1}" }
+                result[match.groupValues[1]] = value
+            }
         return result
     }
 
@@ -169,7 +172,7 @@ object DbtCommandPlanner {
             DbtCommandKind.INLINE -> {
                 require(
                     !command.invocation.isNullOrBlank() &&
-                        command.invocation.length <= 65_536 &&
+                        command.invocation.length <= CommandLimits.MAX_INVOCATION_CHARS &&
                         '\u0000' !in command.invocation,
                 ) {
                     "Enter a macro call smaller than 64 KB"

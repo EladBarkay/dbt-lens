@@ -2,6 +2,7 @@ package dev.dbt.intellij.semantic
 
 import com.intellij.psi.PsiElement
 import com.intellij.psi.util.PsiTreeUtil
+import dev.dbt.intellij.io.SourceLimits
 import dev.dbt.intellij.lang.DbtTypes as T
 import dev.dbt.intellij.psi.*
 
@@ -37,7 +38,8 @@ object DbtTypeInference {
     }
 
     fun of(element: PsiElement?, depth: Int = 0, visited: Set<PsiElement> = emptySet()): DbtType {
-        if (element == null || depth > 20 || element in visited) return DbtType.UNKNOWN
+        if (element == null || depth > SourceLimits.MAX_INFERENCE_DEPTH || element in visited)
+            return DbtType.UNKNOWN
         val seen = visited + element
         fun infer(child: PsiElement?) = of(child, depth + 1, seen)
         val children = element.children.toList()

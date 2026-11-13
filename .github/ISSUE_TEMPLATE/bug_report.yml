@@ -1,0 +1,42 @@
+name: Bug report
+description: Something in DBT Lens doesn't work as expected.
+labels: [bug]
+body:
+  - type: input
+    id: ide
+    attributes:
+      label: IDE and version
+      description: From Help → About, for example "PyCharm 2026.3 (Professional)".
+    validations:
+      required: true
+  - type: input
+    id: plugin
+    attributes:
+      label: DBT Lens version
+      description: From Settings → Plugins.
+    validations:
+      required: true
+  - type: input
+    id: dbt
+    attributes:
+      label: dbt version and adapter
+      description: Only needed for dbt command or saved-output problems, for example "dbt-core 1.10, snowflake".
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: A minimal model, macro or YAML snippet helps most. Remove any private data.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected and actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or screenshots
+      description: Help → Show Log in Finder/Explorer → idea.log. Redact credentials and warehouse data.
+      render: text

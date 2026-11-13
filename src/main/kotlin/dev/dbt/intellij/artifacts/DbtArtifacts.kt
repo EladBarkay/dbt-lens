@@ -78,7 +78,7 @@ class DbtArtifacts(private val project: Project) : Disposable {
         ) {
             "Artifact parsing must run in background"
         }
-        if (cache.size >= 64) cache.clear()
+        if (cache.size >= ArtifactLimits.MAX_CACHED_SNAPSHOTS) cache.clear()
         val before = runCatching { stamps(request) }.getOrDefault(emptyList())
         if (!force)
             cache[request]

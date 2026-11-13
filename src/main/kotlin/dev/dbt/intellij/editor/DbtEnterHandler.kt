@@ -12,6 +12,8 @@ import dev.dbt.intellij.lang.DbtBlocks
 import dev.dbt.intellij.lang.DbtLanguage
 import dev.dbt.intellij.lang.DbtTypes as T
 
+private const val BODY_INDENT = "    "
+
 class DbtEnterHandler : EnterHandlerDelegate {
     override fun preprocessEnter(
         file: PsiFile,
@@ -55,9 +57,9 @@ class DbtEnterHandler : EnterHandlerDelegate {
         // Keep manually written bodies intact; completion templates handle new complete blocks.
         if (editor.document.charsSequence.substring(offset).isNotBlank())
             return EnterHandlerDelegate.Result.Continue
-        val insertion = "\n$indent    \n$indent{% $close %}"
+        val insertion = "\n$indent$BODY_INDENT\n$indent{% $close %}"
         editor.document.insertString(offset, insertion)
-        editor.caretModel.moveToOffset(offset + 1 + indent.length + 4)
+        editor.caretModel.moveToOffset(offset + 1 + indent.length + BODY_INDENT.length)
         return EnterHandlerDelegate.Result.Stop
     }
 }

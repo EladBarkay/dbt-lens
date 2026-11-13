@@ -14,6 +14,7 @@ import com.intellij.psi.util.CachedValueProvider
 import com.intellij.psi.util.CachedValuesManager
 import com.intellij.psi.util.PsiModificationTracker
 import com.intellij.util.indexing.FileBasedIndex
+import dev.dbt.intellij.io.SourceLimits
 import dev.dbt.intellij.project.DbtMacroIndex
 import dev.dbt.intellij.project.DbtProjectRoots
 
@@ -152,7 +153,7 @@ class DependencyMacros(private val project: Project) {
         >()
 
     private fun catalog(root: VirtualFile): Map<String, List<VirtualFile>> {
-        if (catalogs.size >= 128) catalogs.clear()
+        if (catalogs.size >= SourceLimits.MAX_CACHED_CATALOGS) catalogs.clear()
         return catalogs
             .computeIfAbsent(root) {
                 CachedValuesManager.getManager(project)
@@ -175,7 +176,7 @@ class DependencyMacros(private val project: Project) {
                                     !file.isDirectory &&
                                         file.extension?.lowercase() in
                                             setOf("sql", "jinja", "j2") &&
-                                        file.length <= 2_000_000
+                                        file.length <= SourceLimits.MAX_FILE_BYTES
                                 ) {
                                     val text =
                                         com.intellij.openapi.fileEditor.FileDocumentManager

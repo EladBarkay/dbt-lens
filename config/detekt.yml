@@ -1,0 +1,24 @@
+# Extends detekt's defaults. Existing findings are recorded in detekt-baseline.xml;
+# new code must not add any. Regenerate the baseline only when removing findings.
+complexity:
+  CyclomaticComplexMethod:
+    threshold: 25
+  LongMethod:
+    threshold: 100
+  NestedBlockDepth:
+    threshold: 6
+  ComplexCondition:
+    threshold: 6
+style:
+  LoopWithTooManyJumpStatements:
+    # Early break/continue is idiomatic in the lexer, parser and scope walks.
+    active: false
+  MagicNumber:
+    # Numbers belong in named constants or properties; literals inside logic are reported.
+    ignorePropertyDeclaration: true
+  ReturnCount:
+    active: false
+  WildcardImport:
+    active: false
+  MaxLineLength:
+    active: false

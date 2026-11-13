@@ -6,6 +6,7 @@ import com.google.gson.JsonParser
 import com.google.gson.Strictness
 import com.google.gson.stream.JsonReader
 import com.google.gson.stream.JsonToken
+import com.intellij.openapi.progress.ProcessCanceledException
 import com.intellij.openapi.progress.ProgressManager
 import dev.dbt.intellij.io.BoundedFiles
 import java.nio.file.Files
@@ -115,7 +116,7 @@ object ArtifactReader {
                 value?.isJsonArray == true -> value.asJsonArray.map { "" to it }
                 else -> emptyList()
             }
-        return records.take(1000).mapNotNull { (key, record) ->
+        return records.take(ArtifactLimits.MAX_COLUMNS).mapNotNull { (key, record) ->
             record
                 .takeIf { it.isJsonObject }
                 ?.asJsonObject
@@ -161,11 +162,11 @@ object ArtifactReader {
             record.string("source_name"),
             record.string("raw_code") ?: record.string("raw_sql") ?: record.string("macro_sql"),
             (record.string("compiled_code") ?: record.string("compiled_sql"))?.takeIf {
-                it.length <= 2_000_000
+                it.length <= ArtifactLimits.MAX_COMPILED_CHARS
             },
             record.string("compiled_path"),
             depends?.let { it.strings("nodes") + it.strings("macros") }.orEmpty(),
-            record.array("arguments").take(200).mapNotNull { arg ->
+            record.array("arguments").take(ArtifactLimits.MAX_MACRO_ARGUMENTS).mapNotNull { arg ->
                 arg.takeIf { it.isJsonObject }
                     ?.asJsonObject
                     ?.let {
@@ -179,7 +180,7 @@ object ArtifactReader {
             record.string("language"),
             record.array("fqn").let { parts ->
                 if (
-                    parts.size <= 100 &&
+                    parts.size <= ArtifactLimits.MAX_FQN_PARTS &&
                         parts.all { it.isJsonPrimitive && it.asJsonPrimitive.isString }
                 )
                     parts.map { it.asString }
@@ -226,7 +227,9 @@ object ArtifactReader {
         val schema = metadata.string("dbt_schema_version").orEmpty()
         val supported =
             if (type == "manifest")
-                (8..12).map { "https://schemas.getdbt.com/dbt/manifest/v$it.json" }
+                ArtifactLimits.SUPPORTED_MANIFEST_VERSIONS.map {
+                    "https://schemas.getdbt.com/dbt/manifest/v$it.json"
+                }
             else listOf("https://schemas.getdbt.com/dbt/catalog/v1.json")
         require(schema in supported) { "Unsupported $type schema: $schema" }
         require(metadata.string("project_name")?.let { it == projectName } != false) {
@@ -234,6 +237,8 @@ object ArtifactReader {
         }
     }
 
+    // Any artifact read or parse failure becomes a readable status; cancellation is rethrown first.
+    @Suppress("TooGenericExceptionCaught")
     fun load(request: ArtifactRequest): ArtifactSnapshot {
         request.problem?.let {
             return ArtifactSnapshot(messages = listOf(it))
@@ -266,7 +271,7 @@ object ArtifactReader {
                         val seen = hashSetOf<String>()
                         while (reader.hasNext()) {
                             ProgressManager.checkCanceled()
-                            require(++count <= 100_000) {
+                            require(++count <= ArtifactLimits.MAX_ENTRIES) {
                                 "Artifact exceeds the 100,000 resource limit"
                             }
                             val id = reader.nextName()
@@ -281,7 +286,9 @@ object ArtifactReader {
                         reader.beginObject()
                         while (reader.hasNext()) {
                             ProgressManager.checkCanceled()
-                            require(parents.size < 100_000) { "Too many lineage entries" }
+                            require(parents.size < ArtifactLimits.MAX_ENTRIES) {
+                                "Too many lineage entries"
+                            }
                             val id = reader.nextName()
                             require(id !in parents) { "Duplicate lineage entry: $id" }
                             val array = JsonParser.parseReader(reader)
@@ -331,7 +338,9 @@ object ArtifactReader {
                                 reader.beginObject()
                                 while (reader.hasNext()) {
                                     ProgressManager.checkCanceled()
-                                    require(records.size < 100_000) { "Too many catalog entries" }
+                                    require(records.size < ArtifactLimits.MAX_ENTRIES) {
+                                        "Too many catalog entries"
+                                    }
                                     val id = reader.nextName()
                                     require(records.put(id, objectValue(reader)) == null) {
                                         "Duplicate catalog entry: $id"
@@ -388,8 +397,9 @@ object ArtifactReader {
                                 node.copy(columns = merged, relation = node.relation ?: relation)
                         }
                     }
+                } catch (e: ProcessCanceledException) {
+                    throw e
                 } catch (e: Exception) {
-                    if (e is com.intellij.openapi.progress.ProcessCanceledException) throw e
                     messages += "Catalog unavailable: ${e.message}"
                 }
             }
@@ -400,8 +410,9 @@ object ArtifactReader {
                 messages,
                 true,
             )
+        } catch (e: ProcessCanceledException) {
+            throw e
         } catch (e: Exception) {
-            if (e is com.intellij.openapi.progress.ProcessCanceledException) throw e
             return ArtifactSnapshot(messages = listOf("Manifest unavailable: ${e.message}"))
         }
     }
@@ -426,11 +437,11 @@ object ArtifactReader {
             if (
                 !file.startsWith(target) ||
                     !Files.isRegularFile(file) ||
-                    Files.size(file) > 2_000_000 ||
+                    Files.size(file) > ArtifactLimits.MAX_COMPILED_FILE_BYTES ||
                     !file.toRealPath().startsWith(target.toRealPath())
             )
                 null
-            else BoundedFiles.text(file, 2_000_000)
+            else BoundedFiles.text(file, ArtifactLimits.MAX_COMPILED_FILE_BYTES)
         }
     }
 }

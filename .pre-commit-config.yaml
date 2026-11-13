@@ -1,0 +1,37 @@
+# Install once with `pre-commit install`; run everything with `pre-commit run --all-files`.
+# CI runs the same hooks (except ktfmt, which `./gradlew check` already enforces).
+# Third-party files (license text, dbt schemas and supplied dbt marks; see NOTICE) stay byte-for-byte
+# as published, so the whitespace fixers skip them. Secret and syntax checks still apply.
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+        args: [--markdown-linebreak-ext=md]
+        exclude: ^(LICENSE|src/main/resources/schemas/.*|src/main/resources/icons/dbt(-sql)?\.svg)$
+      - id: end-of-file-fixer
+        exclude: ^(LICENSE|src/main/resources/schemas/.*|src/main/resources/icons/dbt(-sql)?\.svg)$
+      - id: mixed-line-ending
+        exclude: \.bat$
+      - id: check-yaml
+      - id: check-json
+      - id: check-xml
+      - id: check-merge-conflict
+      - id: check-added-large-files
+      - id: detect-private-key
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.1
+    hooks:
+      - id: gitleaks
+  - repo: https://github.com/rhysd/actionlint
+    rev: v1.7.12
+    hooks:
+      - id: actionlint
+  - repo: local
+    hooks:
+      - id: ktfmt
+        name: ktfmt
+        entry: ./gradlew ktfmtFormat --quiet
+        language: system
+        files: \.kts?$
+        pass_filenames: false

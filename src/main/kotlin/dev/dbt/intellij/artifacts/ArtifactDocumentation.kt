@@ -67,17 +67,18 @@ object ArtifactDocumentation {
             if (node.columns.isNotEmpty()) {
                 val hasTypes = node.columns.any { !it.type.isNullOrBlank() }
                 append(
-                    "<h3>Columns</h3><table><tr><th width='${if (hasTypes) 30 else 35}%'>Name</th>",
+                    "<h3>Columns</h3><table><tr><th width='${if (hasTypes) ArtifactLayout.NAME_WIDTH_WITH_TYPES else ArtifactLayout.NAME_WIDTH}%'>Name</th>",
                 )
                 if (hasTypes) append("<th width='20%'>Type</th>")
                 append("<th>Description</th></tr>")
-                node.columns.take(100).forEach {
+                node.columns.take(ArtifactLimits.MAX_SHOWN_COLUMNS).forEach {
                     append("<tr><td><code>${escape(it.name)}</code></td>")
                     if (hasTypes) append("<td>${escape(it.type.orEmpty())}</td>")
                     append("<td>${escape(it.description).replace("\n", "<br>")}</td></tr>")
                 }
                 append("</table>")
-                if (node.columns.size > 100) append("<p>Showing the first 100 columns.</p>")
+                if (node.columns.size > ArtifactLimits.MAX_SHOWN_COLUMNS)
+                    append("<p>Showing the first ${ArtifactLimits.MAX_SHOWN_COLUMNS} columns.</p>")
             }
             val tests =
                 snapshot.children[node.id]
@@ -86,9 +87,12 @@ object ArtifactDocumentation {
                     .filter { it.kind in setOf("test", "unit_test") }
             if (tests.isNotEmpty()) {
                 append("<h3>Tests</h3><ul>")
-                tests.take(30).forEach { append("<li>${escape(it.name)}</li>") }
+                tests.take(ArtifactLimits.MAX_SHOWN_TESTS).forEach {
+                    append("<li>${escape(it.name)}</li>")
+                }
                 append("</ul>")
-                if (tests.size > 30) append("<p>Showing the first 30 tests.</p>")
+                if (tests.size > ArtifactLimits.MAX_SHOWN_TESTS)
+                    append("<p>Showing the first ${ArtifactLimits.MAX_SHOWN_TESTS} tests.</p>")
             }
             append(
                 "</div><div class='bottom'>Saved dbt metadata${snapshot.generatedAt?.let { " · ${escape(it)}" }.orEmpty()}",

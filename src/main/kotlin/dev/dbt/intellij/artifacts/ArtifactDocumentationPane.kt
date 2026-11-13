@@ -12,8 +12,8 @@ import com.intellij.util.ui.UIUtil
 internal class ArtifactDocumentationPane :
     JBHtmlPane(
         JBHtmlPaneStyleConfiguration {
-            spaceBeforeParagraph = 6
-            spaceAfterParagraph = 8
+            spaceBeforeParagraph = ArtifactLayout.PARAGRAPH_SPACE_BEFORE
+            spaceAfterParagraph = ArtifactLayout.PARAGRAPH_SPACE_AFTER
             enableInlineCodeBackground = false
         },
         JBHtmlPaneConfiguration {
@@ -38,6 +38,6 @@ internal class ArtifactDocumentationPane :
         font = UIUtil.getLabelFont().deriveFont(java.awt.Font.PLAIN)
         background = JBColor.namedColor("ToolWindow.background", UIUtil.getPanelBackground())
         foreground = JBColor.namedColor("Label.foreground", UIUtil.getLabelForeground())
-        border = JBUI.Borders.empty(12)
+        border = JBUI.Borders.empty(ArtifactLayout.PANE_PADDING)
     }
 }

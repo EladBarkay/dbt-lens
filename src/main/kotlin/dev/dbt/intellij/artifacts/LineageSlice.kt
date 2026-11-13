@@ -17,7 +17,7 @@ data class LineageSlice(
             active: String,
             depth: Int,
             direction: LineageDirection,
-            limit: Int = 80,
+            limit: Int = ArtifactLimits.LINEAGE_RESOURCE_LIMIT,
         ): LineageSlice {
             if (active !in snapshot.nodes) return LineageSlice(emptyMap(), emptySet(), false)
             val layers = linkedMapOf(active to 0)
@@ -26,7 +26,7 @@ data class LineageSlice(
             fun walk(up: Boolean) {
                 var frontier = setOf(active)
                 val visited = mutableSetOf(active)
-                for (distance in 1..depth.coerceIn(1, 3)) {
+                for (distance in 1..depth.coerceIn(1, ArtifactLimits.MAX_LINEAGE_DEPTH)) {
                     val next = linkedSetOf<String>()
                     for (id in frontier) {
                         val adjacent =
@@ -34,7 +34,7 @@ data class LineageSlice(
                             else snapshot.children[id].orEmpty()
                         for (neighbor in adjacent) {
                             // Missing/disabled IDs must not bypass the UI's bounded traversal.
-                            if (++examined > 6_400) {
+                            if (++examined > ArtifactLimits.MAX_LINEAGE_EDGES_EXAMINED) {
                                 truncated = true
                                 return
                             }

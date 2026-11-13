@@ -68,7 +68,7 @@ jobs:
       - name: Package checksum
         if: matrix.name == 'sql'
         working-directory: build/distributions
-        run: sha256sum *.zip > SHA256SUMS
+        run: sha256sum -- *.zip > SHA256SUMS
       - uses: actions/upload-artifact@v7.0.2
         if: matrix.name == 'sql'
         with:
@@ -105,3 +105,23 @@ jobs:
           name: plugin-verifier
           path: build/reports/pluginVerifier/
           retention-days: 14
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v7.1.0
+        with:
+          python-version: '3.13'
+      - uses: actions/cache@v6.1.0
+        with:
+          path: ~/.cache/pre-commit
+          key: pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}
+      - name: Run pre-commit hooks
+        env:
+          SKIP: ktfmt
+        run: |
+          pip install pre-commit==4.7.0
+          pre-commit run --all-files --show-diff-on-failure
