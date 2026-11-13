@@ -30,7 +30,6 @@ plugin and formatter versions are pinned in the repository.
 | Kotlin compiler | every build | Warnings fail the build |
 | [pre-commit](https://pre-commit.com) | commit hook, CI `lint` job | Whitespace and file hygiene, YAML/JSON/XML syntax, private keys and secrets (gitleaks), workflow lint (actionlint) |
 | [Kover](https://github.com/Kotlin/kotlinx-kover) | CI `sql` job, `./gradlew koverHtmlReport` | Test coverage report (on the run summary and as an artifact); informational, not a gate |
-| [Qodana](https://www.jetbrains.com/qodana/) | CI `qodana` job | JetBrains IDE inspections on changed code; reports findings on the PR, not a required check |
 
 Install pre-commit with `pipx install pre-commit` (or `pip install pre-commit`), then run
 `pre-commit install` once in the repository. `pre-commit run --all-files` checks everything on demand.
