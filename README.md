@@ -20,6 +20,8 @@ highlighted and navigable, macros and resources resolve across your project and 
 and saved dbt output (compiled SQL, docs, lineage) is one click away. Everything works offline.
 Editor features never run dbt or your project's code.
 
+![The DBT Lens tool window showing upstream and downstream lineage for a dbt model](docs/images/lineage.png)
+
 ## Features
 
 | | |
