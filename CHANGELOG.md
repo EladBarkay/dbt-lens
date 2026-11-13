@@ -2,13 +2,18 @@
 
 All notable changes to DBT Lens are listed here. Versions follow [semantic versioning](https://semver.org).
 
-## 1.0.1 — Listing and naming polish
+## 1.0.2 — Listing and naming polish
 
 - Every name shown in the IDE now reads **DBT Lens**: the settings and color scheme pages, the tool
   window, YAML schema names and messages. The tool window returns to its default position once;
   saved settings are kept.
 - New Marketplace description listing the plugin's features.
-- First release signed with the project's own key and published automatically.
+- Releases are signed with the project's own key and published to the Marketplace automatically.
+
+## 1.0.1 — Listing and naming polish (GitHub only)
+
+- The same plugin changes as 1.0.2. Its automatic Marketplace upload failed, so these changes reach
+  the Marketplace in 1.0.2.
 
 ## 1.0.0 — First Marketplace release
 

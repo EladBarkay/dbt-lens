@@ -12,7 +12,7 @@ plugins {
 
 group = "dev.dbt.intellij"
 
-version = "1.0.1"
+version = "1.0.2"
 
 ktfmt { kotlinLangStyle() }
 
@@ -134,6 +134,11 @@ tasks.signPlugin {
 tasks.verifyPluginSignature {
     inputArchiveFile = tasks.signPlugin.flatMap { it.signedArchiveFile }
     dependsOn(tasks.signPlugin)
+}
+
+tasks.publishPlugin {
+    archiveFiles.setFrom(tasks.signPlugin.flatMap { it.signedArchiveFile })
+    dependsOn(tasks.verifyPluginSignature)
 }
 
 tasks.verifyPlugin {
