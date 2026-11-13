@@ -64,22 +64,7 @@ object ArtifactDocumentation {
                 }
                 append("</ul>")
             }
-            if (node.columns.isNotEmpty()) {
-                val hasTypes = node.columns.any { !it.type.isNullOrBlank() }
-                append(
-                    "<h3>Columns</h3><table><tr><th width='${if (hasTypes) ArtifactLayout.NAME_WIDTH_WITH_TYPES else ArtifactLayout.NAME_WIDTH}%'>Name</th>",
-                )
-                if (hasTypes) append("<th width='20%'>Type</th>")
-                append("<th>Description</th></tr>")
-                node.columns.take(ArtifactLimits.MAX_SHOWN_COLUMNS).forEach {
-                    append("<tr><td><code>${escape(it.name)}</code></td>")
-                    if (hasTypes) append("<td>${escape(it.type.orEmpty())}</td>")
-                    append("<td>${escape(it.description).replace("\n", "<br>")}</td></tr>")
-                }
-                append("</table>")
-                if (node.columns.size > ArtifactLimits.MAX_SHOWN_COLUMNS)
-                    append("<p>Showing the first ${ArtifactLimits.MAX_SHOWN_COLUMNS} columns.</p>")
-            }
+            if (node.columns.isNotEmpty()) appendColumns(node.columns)
             val tests =
                 snapshot.children[node.id]
                     .orEmpty()
@@ -101,5 +86,28 @@ object ArtifactDocumentation {
             snapshot.messages.forEach { append("<br>${escape(it)}") }
             append("</div>")
         }
+    }
+
+    private fun StringBuilder.appendColumns(columns: List<ArtifactColumn>) {
+        val hasTypes = columns.any { !it.type.isNullOrBlank() }
+        val hasDescriptions = columns.any { it.description.isNotBlank() }
+        append("<h3>Columns</h3><table><tr><th")
+        if (hasDescriptions)
+            append(
+                " width='${if (hasTypes) ArtifactLayout.NAME_WIDTH_WITH_TYPES else ArtifactLayout.NAME_WIDTH}%'",
+            )
+        append(">Name</th>")
+        if (hasTypes) append("<th width='20%'>Type</th>")
+        if (hasDescriptions) append("<th>Description</th>")
+        append("</tr>")
+        columns.take(ArtifactLimits.MAX_SHOWN_COLUMNS).forEach {
+            append("<tr><td nowrap><code>${escape(it.name)}</code></td>")
+            if (hasTypes) append("<td>${escape(it.type.orEmpty())}</td>")
+            if (hasDescriptions) append("<td>${escape(it.description).replace("\n", "<br>")}</td>")
+            append("</tr>")
+        }
+        append("</table>")
+        if (columns.size > ArtifactLimits.MAX_SHOWN_COLUMNS)
+            append("<p>Showing the first ${ArtifactLimits.MAX_SHOWN_COLUMNS} columns.</p>")
     }
 }

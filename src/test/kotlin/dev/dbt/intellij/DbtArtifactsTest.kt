@@ -454,14 +454,21 @@ class DbtArtifactsTest : BasePlatformTestCase() {
             )
         assertEquals(
             setOf("a", "b"),
-            LineageSlice.build(snapshot, "a", 1, LineageDirection.DOWNSTREAM).layers.keys,
+            LineageSlice.build(snapshot, "a", LineageQuery(1, LineageDirection.DOWNSTREAM))
+                .layers
+                .keys,
         )
         assertEquals(
             setOf("a", "c"),
-            LineageSlice.build(snapshot, "a", 1, LineageDirection.UPSTREAM).layers.keys,
+            LineageSlice.build(snapshot, "a", LineageQuery(1, LineageDirection.UPSTREAM))
+                .layers
+                .keys,
         )
-        assertEquals(4, LineageSlice.build(snapshot, "a", 3, LineageDirection.BOTH).layers.size)
-        val limited = LineageSlice.build(snapshot, "a", 3, LineageDirection.BOTH, 2)
+        assertEquals(
+            4,
+            LineageSlice.build(snapshot, "a", LineageQuery(3, LineageDirection.BOTH)).layers.size,
+        )
+        val limited = LineageSlice.build(snapshot, "a", LineageQuery(3, LineageDirection.BOTH), 2)
         assertEquals(2, limited.layers.size)
         assertTrue(limited.truncated)
         val missingParents =
@@ -469,7 +476,8 @@ class DbtArtifactsTest : BasePlatformTestCase() {
                 mapOf("a" to n("a", (1..10_000).map { "missing.$it" }.toSet())),
                 valid = true,
             )
-        val bounded = LineageSlice.build(missingParents, "a", 1, LineageDirection.UPSTREAM)
+        val bounded =
+            LineageSlice.build(missingParents, "a", LineageQuery(1, LineageDirection.UPSTREAM))
         assertEquals(setOf("a"), bounded.layers.keys)
         assertTrue("Missing IDs must not bypass the traversal work limit", bounded.truncated)
     }
@@ -706,6 +714,91 @@ class DbtArtifactsTest : BasePlatformTestCase() {
             Files.deleteIfExists(outside.resolve("manifest.json"))
             Files.deleteIfExists(outside)
         }
+    }
+
+    fun testLineageCanHideTestsAndMacros() {
+        fun n(name: String, kind: String, parents: Set<String> = emptySet()) =
+            ArtifactNode(
+                name,
+                kind,
+                name,
+                "warehouse",
+                "models/$name.sql",
+                "",
+                emptyList(),
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                parents,
+            )
+        val snapshot =
+            ArtifactSnapshot(
+                mapOf(
+                    "orders" to n("orders", "model", setOf("cents", "raw")),
+                    "cents" to n("cents", "macro"),
+                    "raw" to n("raw", "source"),
+                    "summary" to n("summary", "model", setOf("orders")),
+                    "unique_orders" to n("unique_orders", "test", setOf("orders")),
+                ),
+                valid = true,
+            )
+        assertEquals(
+            setOf("orders", "cents", "raw", "summary", "unique_orders"),
+            LineageSlice.build(snapshot, "orders", LineageQuery(1, LineageDirection.BOTH))
+                .layers
+                .keys,
+        )
+        val focused =
+            LineageSlice.build(
+                snapshot,
+                "orders",
+                LineageQuery(1, LineageDirection.BOTH, includeTestsAndMacros = false),
+            )
+        assertEquals(setOf("orders", "raw", "summary"), focused.layers.keys)
+        assertEquals(setOf("raw" to "orders", "orders" to "summary"), focused.edges)
+        assertEquals(
+            setOf("unique_orders"),
+            LineageSlice.build(
+                    snapshot,
+                    "unique_orders",
+                    LineageQuery(1, LineageDirection.DOWNSTREAM, includeTestsAndMacros = false),
+                )
+                .layers
+                .keys,
+        )
+    }
+
+    fun testColumnsWithoutDescriptionsOmitTheDescriptionColumn() {
+        val file =
+            setup(
+                manifest(
+                    node("orders", raw = "select 1").apply {
+                        add(
+                            "columns",
+                            JsonObject().apply {
+                                add("daily_revenue_key", obj("name" to "daily_revenue_key"))
+                                add("region", obj("name" to "region"))
+                            },
+                        )
+                    },
+                ),
+            )
+        myFixture.addFileToProject("repo/warehouse/models/orders.sql", "select 1")
+        val snapshot = saved(file)
+        val html =
+            ArtifactDocumentation.body(
+                file,
+                snapshot.nodes.getValue("model.warehouse.orders"),
+                snapshot,
+                showStaleness = false,
+            )
+        assertFalse(html.contains("Description</th>"))
+        assertTrue(html.contains("<td nowrap><code>daily_revenue_key</code></td></tr>"))
     }
 
     fun testDocumentationRenderingUsesIdeFontAndWrapsLongTestNames() {

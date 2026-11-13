@@ -6,17 +6,25 @@ enum class LineageDirection(val title: String) {
     DOWNSTREAM("Downstream"),
 }
 
+/** What to include in a lineage graph around the selected resource. */
+data class LineageQuery(
+    val depth: Int,
+    val direction: LineageDirection,
+    val includeTestsAndMacros: Boolean = true,
+)
+
 data class LineageSlice(
     val layers: Map<String, Int>,
     val edges: Set<Pair<String, String>>,
     val truncated: Boolean,
 ) {
     companion object {
+        private val TESTS_AND_MACROS = setOf("test", "unit_test", "macro")
+
         fun build(
             snapshot: ArtifactSnapshot,
             active: String,
-            depth: Int,
-            direction: LineageDirection,
+            query: LineageQuery,
             limit: Int = ArtifactLimits.LINEAGE_RESOURCE_LIMIT,
         ): LineageSlice {
             if (active !in snapshot.nodes) return LineageSlice(emptyMap(), emptySet(), false)
@@ -26,7 +34,7 @@ data class LineageSlice(
             fun walk(up: Boolean) {
                 var frontier = setOf(active)
                 val visited = mutableSetOf(active)
-                for (distance in 1..depth.coerceIn(1, ArtifactLimits.MAX_LINEAGE_DEPTH)) {
+                for (distance in 1..query.depth.coerceIn(1, ArtifactLimits.MAX_LINEAGE_DEPTH)) {
                     val next = linkedSetOf<String>()
                     for (id in frontier) {
                         val adjacent =
@@ -38,7 +46,9 @@ data class LineageSlice(
                                 truncated = true
                                 return
                             }
-                            if (neighbor !in snapshot.nodes || !visited.add(neighbor)) continue
+                            val kind = snapshot.nodes[neighbor]?.kind ?: continue
+                            if (!query.includeTestsAndMacros && kind in TESTS_AND_MACROS) continue
+                            if (!visited.add(neighbor)) continue
                             if (neighbor !in layers) {
                                 if (layers.size >= limit) {
                                     truncated = true
@@ -52,8 +62,8 @@ data class LineageSlice(
                     frontier = next
                 }
             }
-            if (direction != LineageDirection.DOWNSTREAM) walk(true)
-            if (direction != LineageDirection.UPSTREAM) walk(false)
+            if (query.direction != LineageDirection.DOWNSTREAM) walk(true)
+            if (query.direction != LineageDirection.UPSTREAM) walk(false)
             val edges =
                 layers.keys
                     .flatMap { child ->

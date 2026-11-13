@@ -16,7 +16,7 @@ plugins {
 
 group = "dev.dbt.intellij"
 
-version = "1.0.3"
+version = "1.0.4"
 
 ktfmt { kotlinLangStyle() }
 
