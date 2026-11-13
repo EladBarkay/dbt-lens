@@ -8,3 +8,7 @@ exclude:
   - name: All
     paths:
       - src/main/resources/schemas
+properties:
+  # Work around an empty ExternalSystemPartialResolutionException in 2026.2 Gradle sync
+  # (IDEA-394218 / KTIJ-40132).
+  gradle.use.resilient.model.fetch: "false"
