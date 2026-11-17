@@ -20,13 +20,13 @@ runs:
       run: |
         sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL
         df -h /
-    - uses: actions/setup-java@v6.2.0
+    - uses: actions/setup-java@v6.3.0
       if: inputs.extra-java-version != ''
       id: extra-java
       with:
         distribution: temurin
         java-version: ${{ inputs.extra-java-version }}
-    - uses: actions/setup-java@v6.2.0
+    - uses: actions/setup-java@v6.3.0
       id: java
       with:
         distribution: temurin
